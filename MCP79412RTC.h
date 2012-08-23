@@ -46,13 +46,17 @@
 
 //MCP7941x Register Addresses
 #define TIME_REG 0x00        //7 registers, Seconds, Minutes, Hours, DOW, Date, Month, Year
+#define DAY_REG 0x03         //the RTC Day register contains the OSCON, VBAT, and VBATEN bits
+#define YEAR_REG 0x06        //RTC year register   
 #define CTRL_REG 0x07        //control register
 #define CALIB_REG 0x08       //calibration register
 #define UNLOCK_ID_REG 0x09   //unlock ID register
 #define ALM0_REG 0x0A        //alarm 0, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
 #define ALM1_REG 0x11        //alarm 1, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
+#define ALM0_DAY 0x0D        //DOW register has alarm config/flag bits
 #define PWRDWN_TS_REG 0x18   //power-down timestamp, 4 registers, Minutes, Hours, Date, Month
 #define PWRUP_TS_REG 0x1C    //power-up timestamp, 4 registers, Minutes, Hours, Date, Month
+#define TIMESTAMP_SIZE 8     //number of bytes in the two timestamp registers
 #define SRAM_START_ADDR 0x20 //first SRAM address
 #define SRAM_SIZE 64         //number of bytes of SRAM
 #define EEPROM_SIZE 128      //number of bytes of EEPROM
@@ -70,11 +74,7 @@
 #define RS2 2       //RS2:0 set square wave output frequency: 0==1Hz, 1==4096Hz, 2==8192Hz, 3=32768Hz
 #define RS1 1
 #define RS0 0
-#define SQWAVE_1_HZ 0
-#define SQWAVE_4096_HZ 1
-#define SQWAVE_8192_HZ 2
-#define SQWAVE_32768_HZ 3
-#define SQWAVE_NONE 4
+enum {SQWAVE_1_HZ, SQWAVE_4096_HZ, SQWAVE_8192_HZ, SQWAVE_32768_HZ, SQWAVE_NONE};
 
 //Other Control Bits
 #define ST 7        //Seconds register (TIME_REG) oscillator start/stop bit, 1==Start, 0==Stop
@@ -92,22 +92,19 @@
 #define ALMC1 5
 #define ALMC0 4
 #define ALMIF 3     //Alarm Interrupt Flag: Set by hardware when an alarm was triggered, cleared by software.
-#define ALM_MATCH_SECONDS 0     //Match Seconds  
-#define ALM_MATCH_MINUTES 1     //Match Minutes
-#define ALM_MATCH_HOURS 2       //Match Hours
-#define ALM_MATCH_DAY 3         //Match Day (alarm triggers at midnight)
-#define ALM_MATCH_DATE 4        //Match Date
-#define ALM_MATCH_DATETIME 5    //Match Second, Minute, Hour, Day, Date, Month
-
+enum {ALM_MATCH_SECONDS, ALM_MATCH_MINUTES, ALM_MATCH_HOURS, ALM_MATCH_DAY, ALM_MATCH_DATE, ALM_RESERVED_5, ALM_RESERVED_6, ALM_MATCH_DATETIME, ALM_DISABLE};
+//Note ALM_MATCH_DAY triggers alarm at midnight
+#define ALARM_0 0   //constants for calling functions
+#define ALARM_1 1
 
 class MCP79412RTC
 {
     public:
         MCP79412RTC();
         static time_t get(void);
-	static void set(time_t t);
-	static void read(tmElements_t &tm);
-	static void write(tmElements_t &tm);
+        static void set(time_t t);
+        static void read(tmElements_t &tm);
+        static void write(tmElements_t &tm);
         void sramWrite(byte addr, byte value);
         void sramWrite(byte addr, byte *values, byte nBytes);
         byte sramRead(byte addr);
@@ -119,6 +116,11 @@ class MCP79412RTC
         int calibRead(void);
         void calibWrite(int value);
         void idRead(byte *uniqueID);
+        boolean powerFail(time_t *powerDown, time_t *powerUp);
+        void squareWave(uint8_t freq);
+        void setAlarm(uint8_t alarmNumber, time_t alarmTime);
+        void enableAlarm(uint8_t alarmNumber, uint8_t alarmType);
+        boolean alarm(uint8_t alarmNumber);
         
         boolean oscStarted(void);
 
