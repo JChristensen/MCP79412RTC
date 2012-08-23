@@ -1,4 +1,4 @@
- /*----------------------------------------------------------------------*
+/*----------------------------------------------------------------------*
  * MCP79412RTC.cpp - Arduino library to support the Microchip MCP79412  *
  * Real-Time Clock. This library is intended for use with the Arduino   *
  * Time.h library, http://www.arduino.cc/playground/Code/Time           *
