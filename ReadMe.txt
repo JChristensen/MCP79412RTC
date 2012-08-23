@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*
+ /*----------------------------------------------------------------------*
  * MCP79412RTC.cpp - Arduino library to support the Microchip MCP79412  *
  * Real-Time Clock. This library is intended for use with the Arduino   *
  * Time.h library, http://www.arduino.cc/playground/Code/Time           *
@@ -89,3 +89,30 @@ void calibWrite(int value);
 
 Read the 64-bit unique ID from the RTC into the given 8-byte array.
 void idRead(byte *uniqueID);
+
+Returns true or false to indicate whether a power failure has occurred.
+If one occurred, the power down and power up timestamps are returned in the variables
+given by the caller, the RTC's power fail flag is reset and the power up/down
+timestamps are cleared.
+boolean powerFail(time_t *powerDown, time_t *powerUp);
+
+Enables or disables the square wave output on the multi-function pin (MFP).
+freq is one of the following:
+SQWAVE_1_HZ, SQWAVE_4096_HZ, SQWAVE_8192_HZ, SQWAVE_32768_HZ, SQWAVE_NONE
+void squareWave(uint8_t freq);
+
+Set an alarm time. Sets the alarm registers only, does not enable
+the alarm, use enableAlarm() for that. alarmNumber is 0 or 1, but is
+ruthlessly masked to ensure this is so.
+void setAlarm(uint8_t alarmNumber, time_t alarmTime);
+
+Enable or disable the given alarm (0 or 1).
+alarmNumber is masked to ensure a value of 0 or 1.
+alarmType is one of the following:
+ALM_MATCH_SECONDS, ALM_MATCH_MINUTES, ALM_MATCH_HOURS, ALM_MATCH_DAY, ALM_MATCH_DATE, ALM_MATCH_DATETIME, ALM_DISABLE
+void enableAlarm(uint8_t alarmNumber, uint8_t alarmType);
+
+Tests whether the given alarm (0 or 1) has been triggered, returns
+true if triggered, else false. Clears the alarm flag to trap the next
+trigger event can be trapped.
+boolean alarm(uint8_t alarmNumber);
