@@ -121,6 +121,8 @@ class MCP79412RTC
         void setAlarm(uint8_t alarmNumber, time_t alarmTime);
         void enableAlarm(uint8_t alarmNumber, uint8_t alarmType);
         boolean alarm(uint8_t alarmNumber);
+        void out(boolean level);
+        void alarmPolarity(boolean polarity);
         
         boolean oscStarted(void);
 

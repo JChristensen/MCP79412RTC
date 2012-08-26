@@ -453,7 +453,7 @@ void MCP79412RTC::enableAlarm(uint8_t alarmNumber, uint8_t alarmType)
     ramRead(CTRL_REG, &ctrl, 1);
     if (alarmType < ALM_DISABLE) {
         ramRead(ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
-        day = ( day & 0x07 ) | alarmType << 4;      //reset interrupt flag, OR in the config bits
+        day = ( day & 0x87 ) | alarmType << 4;  //reset interrupt flag, OR in the config bits
         ramWrite(ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
         ctrl |= _BV(ALM0 + alarmNumber);        //enable the alarm
     }
@@ -473,14 +473,54 @@ boolean MCP79412RTC::alarm(uint8_t alarmNumber)
     uint8_t day;                //alarm day register has config & flag bits
 
     alarmNumber &= 0x01;        //ensure a valid alarm number
-    ramRead( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG) , &day, 1);
+    ramRead( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
     if (day & _BV(ALMIF)) {
         day &= ~_BV(ALMIF);     //turn off the alarm "interrupt" flag
-        ramWrite( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG) , &day, 1);
+        ramWrite( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
         return true;
     }
     else
         return false;
+}
+
+/*----------------------------------------------------------------------*
+ * Sets the logic level on the MFP when it's not being used as a        *
+ * square wave or alarm output. The default is HIGH.                    *
+ *----------------------------------------------------------------------*/
+void MCP79412RTC::out(boolean level)
+{
+    uint8_t ctrlReg;
+    
+    ramRead(CTRL_REG, &ctrlReg, 1);
+    if (level)
+        ctrlReg |= _BV(OUT);
+    else
+        ctrlReg &= ~_BV(OUT);
+    ramWrite(CTRL_REG, &ctrlReg, 1);
+}
+
+/*----------------------------------------------------------------------*
+ * Specifies the logic level on the Multi-Function Pin (MFP) when an    *
+ * alarm is triggered. The default is HIGH. When both alarms are        *
+ * active, the two are ORed together to determine the level of the MFP. *
+ * With alarm polarity set to LOW (the default), this causes the MFP    *
+ * to go low only when BOTH alarms are triggered. With alarm polarity   *
+ * set to HIGH, the MFP will go high when EITHER alarm is triggered.    *
+ *                                                                      *
+ * Note that the state of the MFP is independent of the alarm           *
+ * "interrupt" flags, and the alarm() function will indicate when an    *
+ * alarm is triggered regardless of the polarity.                       *
+ *----------------------------------------------------------------------*/
+void MCP79412RTC::alarmPolarity(boolean polarity)
+{
+    uint8_t alm0Day;
+    
+    ramRead(ALM0_DAY, &alm0Day, 1);
+    if (polarity)
+        alm0Day |= _BV(OUT);
+    else
+        alm0Day &= ~_BV(OUT);
+    ramWrite(ALM0_DAY, &alm0Day, 1);
 }
 
 /*----------------------------------------------------------------------*
