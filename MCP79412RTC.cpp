@@ -110,7 +110,7 @@ void MCP79412RTC::ramWrite(byte addr, byte value)
  * Write multiple bytes to RTC RAM.                                     *
  * Valid address range is 0x00 - 0x5F, no checking.                     *
  * Number of bytes (nBytes) must be between 1 and 31 (Wire library      *
- * has a limitation of 31 bytes).                                       *
+ * limitation).                                                         *
  *----------------------------------------------------------------------*/
 void MCP79412RTC::ramWrite(byte addr, byte *values, byte nBytes)
 {
@@ -135,8 +135,8 @@ byte MCP79412RTC::ramRead(byte addr)
 /*----------------------------------------------------------------------*
  * Read multiple bytes from RTC RAM.                                    *
  * Valid address range is 0x00 - 0x5F, no checking.                     *
- * Number of bytes (nBytes) must be between 1 and 31 (Wire library      *
- * has a limitation of 31 bytes).                                       *
+ * Number of bytes (nBytes) must be between 1 and 32 (Wire library      *
+ * limitation).                                                         *
  *----------------------------------------------------------------------*/
 void MCP79412RTC::ramRead(byte addr, byte *values, byte nBytes)
 {
@@ -160,14 +160,14 @@ void MCP79412RTC::sramWrite(byte addr, byte value)
  * Write multiple bytes to Static RAM.                                  *
  * Address (addr) is constrained to the range (0, 63).                  *
  * Number of bytes (nBytes) must be between 1 and 31 (Wire library      *
- * has a limitation of 31 bytes).                                       *
+ * limitation).                                                         *
  * Invalid values for nBytes, or combinations of addr and nBytes        *
  * that would result in addressing past the last byte of SRAM will      *
  * result in no action.                                                 *
  *----------------------------------------------------------------------*/
 void MCP79412RTC::sramWrite(byte addr, byte *values, byte nBytes)
 {
-    if (nBytes >= 1 && nBytes <= I2C_BYTE_LIMIT && (addr + nBytes) <= SRAM_SIZE) {
+    if (nBytes >= 1 && nBytes <= (BUFFER_LENGTH - 1) && (addr + nBytes) <= SRAM_SIZE) {
         ramWrite( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes );
     }
 }
@@ -187,15 +187,15 @@ byte MCP79412RTC::sramRead(byte addr)
 /*----------------------------------------------------------------------*
  * Read multiple bytes from Static RAM.                                 *
  * Address (addr) is constrained to the range (0, 63).                  *
- * Number of bytes (nBytes) must be between 1 and 31 (Wire library      *
- * has a limitation of 31 bytes).                                       *
- * Invalid values for addr or nBytes, or combinations of addr and       *
+ * Number of bytes (nBytes) must be between 1 and 32 (Wire library      *
+ * limitation).                                                         *
+ * Invalid values for nBytes, or combinations of addr and               *
  * nBytes that would result in addressing past the last byte of SRAM    *
  * result in no action.                                                 *
  *----------------------------------------------------------------------*/
 void MCP79412RTC::sramRead(byte addr, byte *values, byte nBytes)
 {
-    if (nBytes >= 1 && nBytes <= I2C_BYTE_LIMIT && (addr + nBytes) <= SRAM_SIZE) {
+    if (nBytes >= 1 && nBytes <= BUFFER_LENGTH && (addr + nBytes) <= SRAM_SIZE) {
         ramRead((addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes);
     }
 }
@@ -248,15 +248,15 @@ byte MCP79412RTC::eepromRead(byte addr)
 /*----------------------------------------------------------------------*
  * Read multiple bytes from EEPROM.                                     *
  * Address (addr) is constrained to the range (0, 127).                 *
- * Number of bytes (nBytes) must be between 1 and 31 (Wire library      *
- * has a limitation of 31 bytes).                                       *
+ * Number of bytes (nBytes) must be between 1 and 32 (Wire library      *
+ * limitation).                                                         *
  * Invalid values for addr or nBytes, or combinations of addr and       *
  * nBytes that would result in addressing past the last byte of EEPROM  *
  * result in no action.                                                 *
  *----------------------------------------------------------------------*/
 void MCP79412RTC::eepromRead(byte addr, byte *values, byte nBytes)
 {
-    if (nBytes >= 1 && nBytes <= I2C_BYTE_LIMIT && (addr + nBytes) <= EEPROM_SIZE) {
+    if (nBytes >= 1 && nBytes <= BUFFER_LENGTH && (addr + nBytes) <= EEPROM_SIZE) {
         Wire.beginTransmission(EEPROM_ADDR);
         i2cWrite( addr & (EEPROM_SIZE - 1) );
         Wire.endTransmission();  
@@ -501,7 +501,7 @@ void MCP79412RTC::out(boolean level)
 
 /*----------------------------------------------------------------------*
  * Specifies the logic level on the Multi-Function Pin (MFP) when an    *
- * alarm is triggered. The default is HIGH. When both alarms are        *
+ * alarm is triggered. The default is LOW. When both alarms are         *
  * active, the two are ORed together to determine the level of the MFP. *
  * With alarm polarity set to LOW (the default), this causes the MFP    *
  * to go low only when BOTH alarms are triggered. With alarm polarity   *
@@ -527,7 +527,7 @@ void MCP79412RTC::alarmPolarity(boolean polarity)
  * Check to see if the RTC's oscillator is started (ST bit in seconds   *
  * register). Returns true if started.                                  *
  *----------------------------------------------------------------------*/
-boolean MCP79412RTC::oscStarted(void)
+boolean MCP79412RTC::isRunning(void)
 {
     Wire.beginTransmission(RTC_ADDR);
     i2cWrite(TIME_REG);

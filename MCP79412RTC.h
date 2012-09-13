@@ -61,7 +61,6 @@
 #define SRAM_SIZE 64         //number of bytes of SRAM
 #define EEPROM_SIZE 128      //number of bytes of EEPROM
 #define EEPROM_PAGE_SIZE 8   //number of bytes on an EEPROM page
-#define I2C_BYTE_LIMIT 31    //Wire library limitation, only 31 data bytes can be transferred.
 #define UNIQUE_ID_ADDR 0xF0  //starting address for unique ID
 #define UNIQUE_ID_SIZE 8     //number of bytes in unique ID
 
@@ -123,8 +122,7 @@ class MCP79412RTC
         boolean alarm(uint8_t alarmNumber);
         void out(boolean level);
         void alarmPolarity(boolean polarity);
-        
-        boolean oscStarted(void);
+        boolean isRunning(void);
 
     private:
         static void ramWrite(byte addr, byte value);

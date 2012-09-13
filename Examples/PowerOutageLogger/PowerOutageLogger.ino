@@ -43,7 +43,7 @@ void setup()  {
 
     setSyncProvider(RTC.get);     //the function to get the time from the RTC
     Serial << "RTC SYNC";
-    if (timeStatus()!= timeSet) Serial << "FAIL";
+    if (timeStatus()!= timeSet) Serial << " FAIL";
     Serial << endl;
 
     //logClear();
