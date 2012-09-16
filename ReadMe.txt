@@ -275,10 +275,11 @@ CALIBRATION, POWER FAILURE DETECTION, AND MISCELLANEOUS FUNCTIONS
 
 --------------------------------------------------------------------------------
 calibWrite(int value) writes the given value to the RTC calibration register.
-This is an adjustment factor in PPM, and must be between -127 and 127.
+This is an adjustment factor in PPM, and must be between -127 and 127. Negative
+numbers cause the RTC to run faster, positive numbers cause it to run slower.
 
-    RTC.calibWrite(13);     //makes the RTC run faster by 13 parts per million.
-    RTC.calibWrite(-42);    //makes the RTC run slower by 42 parts per million.
+    RTC.calibWrite(13);     //makes the RTC run slower by 13 parts per million.
+    RTC.calibWrite(-42);    //makes the RTC run faster by 42 parts per million.
 
 --------------------------------------------------------------------------------
 calibRead(void) returns the value of the RTC calibration register.
@@ -333,3 +334,4 @@ idRead(byte *uniqueID) returns the 64-bit unique ID from the RTC into the given
 
     byte buf[8];
     RTC.idRead(buf);
+
