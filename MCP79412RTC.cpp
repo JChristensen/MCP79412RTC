@@ -34,13 +34,16 @@ MCP79412RTC::MCP79412RTC()
   
 /*----------------------------------------------------------------------*
  * Read the current time from the RTC and return it as a time_t value.  *
+ * Returns a zero value if RTC not present (I2C I/O error).             *
  *----------------------------------------------------------------------*/
 time_t MCP79412RTC::get()
 {
     tmElements_t tm;
     
-    read(tm);
-    return(makeTime(tm));
+    if ( read(tm) )
+        return( makeTime(tm) );
+    else
+        return 0;
 }
 
 /*----------------------------------------------------------------------*
@@ -56,23 +59,27 @@ void MCP79412RTC::set(time_t t)
 
 /*----------------------------------------------------------------------*
  * Read the current time from the RTC and return it in a tmElements_t   *
- * structure.                                                           *
+ * structure. Returns false if RTC not present (I2C I/O error).         *
  *----------------------------------------------------------------------*/
-void MCP79412RTC::read(tmElements_t &tm)
+boolean MCP79412RTC::read(tmElements_t &tm)
 {
     Wire.beginTransmission(RTC_ADDR);
     i2cWrite(TIME_REG);
-    Wire.endTransmission();
-
-    //request 7 bytes (secs, min, hr, dow, date, mth, yr)
-    Wire.requestFrom(RTC_ADDR, tmNbrFields);
-    tm.Second = bcd2dec(i2cRead() & ~_BV(ST));   
-    tm.Minute = bcd2dec(i2cRead());
-    tm.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    //assumes 24hr clock
-    tm.Wday = i2cRead() & ~(_BV(OSCON) | _BV(VBAT) | _BV(VBATEN));    //mask off OSCON, VBAT, VBATEN bits
-    tm.Day = bcd2dec(i2cRead());
-    tm.Month = bcd2dec(i2cRead() & ~_BV(LP));       //mask off the leap year bit
-    tm.Year = y2kYearToTm(bcd2dec(i2cRead()));
+    if (Wire.endTransmission() != 0) {
+        return false;
+    }
+    else {
+        //request 7 bytes (secs, min, hr, dow, date, mth, yr)
+        Wire.requestFrom(RTC_ADDR, tmNbrFields);
+        tm.Second = bcd2dec(i2cRead() & ~_BV(ST));   
+        tm.Minute = bcd2dec(i2cRead());
+        tm.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    //assumes 24hr clock
+        tm.Wday = i2cRead() & ~(_BV(OSCON) | _BV(VBAT) | _BV(VBATEN));    //mask off OSCON, VBAT, VBATEN bits
+        tm.Day = bcd2dec(i2cRead());
+        tm.Month = bcd2dec(i2cRead() & ~_BV(LP));       //mask off the leap year bit
+        tm.Year = y2kYearToTm(bcd2dec(i2cRead()));
+        return true;
+    }
 }
 
 /*----------------------------------------------------------------------*

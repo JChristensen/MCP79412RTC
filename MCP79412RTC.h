@@ -102,7 +102,7 @@ class MCP79412RTC
         MCP79412RTC();
         static time_t get(void);
         static void set(time_t t);
-        static void read(tmElements_t &tm);
+        static boolean read(tmElements_t &tm);
         static void write(tmElements_t &tm);
         void sramWrite(byte addr, byte value);
         void sramWrite(byte addr, byte *values, byte nBytes);
