@@ -64,7 +64,7 @@ void MCP79412RTC::set(time_t t)
 boolean MCP79412RTC::read(tmElements_t &tm)
 {
     Wire.beginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
+    i2cWrite((uint8_t)TIME_REG);
     if (Wire.endTransmission() != 0) {
         return false;
     }
@@ -88,8 +88,8 @@ boolean MCP79412RTC::read(tmElements_t &tm)
 void MCP79412RTC::write(tmElements_t &tm)
 {
     Wire.beginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
-    i2cWrite(0x00);                              //stops the oscillator (Bit 7, ST == 0)   
+    i2cWrite((uint8_t)TIME_REG);
+    i2cWrite((uint8_t)0x00);                     //stops the oscillator (Bit 7, ST == 0)   
     i2cWrite(dec2bcd(tm.Minute));
     i2cWrite(dec2bcd(tm.Hour));                  //sets 24 hour format (Bit 6 == 0)
     i2cWrite(tm.Wday | _BV(VBATEN));             //enable battery backup operation
@@ -99,7 +99,7 @@ void MCP79412RTC::write(tmElements_t &tm)
     Wire.endTransmission();  
 
     Wire.beginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
+    i2cWrite((uint8_t)TIME_REG);
     i2cWrite(dec2bcd(tm.Second) | _BV(ST));    //set the seconds and start the oscillator (Bit 7, ST == 1)
     Wire.endTransmission();  
 }
@@ -284,7 +284,7 @@ byte MCP79412RTC::eepromWait(void)
     {
         ++waitCount;
         Wire.beginTransmission(EEPROM_ADDR);
-        i2cWrite(0);
+        i2cWrite((uint8_t)0);
         txStatus = Wire.endTransmission();
         
     } while (txStatus != 0);
@@ -537,7 +537,7 @@ void MCP79412RTC::alarmPolarity(boolean polarity)
 boolean MCP79412RTC::isRunning(void)
 {
     Wire.beginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
+    i2cWrite((uint8_t)TIME_REG);
     Wire.endTransmission();
 
     //request just the seconds register
