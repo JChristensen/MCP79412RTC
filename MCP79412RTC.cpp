@@ -401,7 +401,8 @@ boolean MCP79412RTC::powerFail(time_t *powerDown, time_t *powerUp)
         if (*powerDown > *powerUp) {
             --dn.Year;
             *powerDown = makeTime(dn);
-        }            
+        }
+        return true;
     }
     else
         return false;
