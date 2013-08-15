@@ -17,19 +17,18 @@ Michael Margolis that is supplied with the Arduino Time library above. To change
 from using a DS1307 RTC to an MCP79412 RTC, it is only necessary to change the
 #include statement to include MCP79412RTC.h instead of DS1307RTC.h.
 
-This library also implements functions to support the additional
-features of the MCP79412.
+This library also implements methods to support the additional features
+of the MCP79412.
 
 --------------------------------------------------------------------------------
 To use the library:
-(1) Go to https://github.com/JChristensen/MCP79412RTC/downloads and download the
-file in the compressed format of your choice (zip or tar.gz) to a convenient
-location on your PC.
-(2) Uncompress the downloaded file. This will result in a folder containing all
-the files for the library, that has a name similar to "JChristensen-
-MCP79412-42e98a7".
+(1) Go to https://github.com/JChristensen/MCP79412RTC and click the
+Download ZIP button and save the ZIP file to a convenient location on your PC.
+(2) Uncompress the downloaded file. This will result in a folder containing
+the library files, which has a name that includes the branch name,
+e.g. MCP79412-master.
 (3) Rename the folder to just "MCP79412".
-(4) Copy the renamed folder to the Arduino sketchbook\libraries folder.
+(4) Move the renamed folder to the Arduino sketchbook\libraries folder.
 
 --------------------------------------------------------------------------------
 The following example sketches are included with the Timezone library:

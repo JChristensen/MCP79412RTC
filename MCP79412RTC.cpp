@@ -22,6 +22,7 @@
  *----------------------------------------------------------------------*/ 
 
 #include <Wire.h>
+#include <TinyWireM.h>
 #include "MCP79412RTC.h"
 
 /*----------------------------------------------------------------------*
@@ -29,7 +30,7 @@
  *----------------------------------------------------------------------*/
 MCP79412RTC::MCP79412RTC()
 {
-    Wire.begin();
+    i2cBegin();
 }
   
 /*----------------------------------------------------------------------*
@@ -63,14 +64,14 @@ void MCP79412RTC::set(time_t t)
  *----------------------------------------------------------------------*/
 boolean MCP79412RTC::read(tmElements_t &tm)
 {
-    Wire.beginTransmission(RTC_ADDR);
+    i2cBeginTransmission(RTC_ADDR);
     i2cWrite((uint8_t)TIME_REG);
-    if (Wire.endTransmission() != 0) {
+    if (i2cEndTransmission() != 0) {
         return false;
     }
     else {
         //request 7 bytes (secs, min, hr, dow, date, mth, yr)
-        Wire.requestFrom(RTC_ADDR, tmNbrFields);
+        i2cRequestFrom(RTC_ADDR, tmNbrFields);
         tm.Second = bcd2dec(i2cRead() & ~_BV(ST));   
         tm.Minute = bcd2dec(i2cRead());
         tm.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    //assumes 24hr clock
@@ -87,7 +88,7 @@ boolean MCP79412RTC::read(tmElements_t &tm)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::write(tmElements_t &tm)
 {
-    Wire.beginTransmission(RTC_ADDR);
+    i2cBeginTransmission(RTC_ADDR);
     i2cWrite((uint8_t)TIME_REG);
     i2cWrite((uint8_t)0x00);                     //stops the oscillator (Bit 7, ST == 0)   
     i2cWrite(dec2bcd(tm.Minute));
@@ -96,12 +97,12 @@ void MCP79412RTC::write(tmElements_t &tm)
     i2cWrite(dec2bcd(tm.Day));
     i2cWrite(dec2bcd(tm.Month));
     i2cWrite(dec2bcd(tmYearToY2k(tm.Year))); 
-    Wire.endTransmission();  
+    i2cEndTransmission();  
 
-    Wire.beginTransmission(RTC_ADDR);
+    i2cBeginTransmission(RTC_ADDR);
     i2cWrite((uint8_t)TIME_REG);
     i2cWrite(dec2bcd(tm.Second) | _BV(ST));    //set the seconds and start the oscillator (Bit 7, ST == 1)
-    Wire.endTransmission();  
+    i2cEndTransmission();  
 }
 
 /*----------------------------------------------------------------------*
@@ -121,10 +122,10 @@ void MCP79412RTC::ramWrite(byte addr, byte value)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::ramWrite(byte addr, byte *values, byte nBytes)
 {
-    Wire.beginTransmission(RTC_ADDR);
+    i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
     for (byte i=0; i<nBytes; i++) i2cWrite(values[i]);
-    Wire.endTransmission();  
+    i2cEndTransmission();  
 }
 
 /*----------------------------------------------------------------------*
@@ -147,10 +148,10 @@ byte MCP79412RTC::ramRead(byte addr)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::ramRead(byte addr, byte *values, byte nBytes)
 {
-    Wire.beginTransmission(RTC_ADDR);
+    i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
-    Wire.endTransmission();  
-    Wire.requestFrom( (uint8_t)RTC_ADDR, nBytes );
+    i2cEndTransmission();  
+    i2cRequestFrom( (uint8_t)RTC_ADDR, nBytes );
     for (byte i=0; i<nBytes; i++) values[i] = i2cRead();
 }
 
@@ -174,7 +175,11 @@ void MCP79412RTC::sramWrite(byte addr, byte value)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::sramWrite(byte addr, byte *values, byte nBytes)
 {
+#if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+    if (nBytes >= 1 && (addr + nBytes) <= SRAM_SIZE) {
+#else
     if (nBytes >= 1 && nBytes <= (BUFFER_LENGTH - 1) && (addr + nBytes) <= SRAM_SIZE) {
+#endif
         ramWrite( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes );
     }
 }
@@ -202,7 +207,11 @@ byte MCP79412RTC::sramRead(byte addr)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::sramRead(byte addr, byte *values, byte nBytes)
 {
+#if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+    if (nBytes >= 1 && (addr + nBytes) <= SRAM_SIZE) {
+#else
     if (nBytes >= 1 && nBytes <= BUFFER_LENGTH && (addr + nBytes) <= SRAM_SIZE) {
+#endif
         ramRead((addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes);
     }
 }
@@ -215,11 +224,11 @@ void MCP79412RTC::sramRead(byte addr, byte *values, byte nBytes)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::eepromWrite(byte addr, byte value)
 {
-        Wire.beginTransmission(EEPROM_ADDR);
-        i2cWrite( addr & (EEPROM_SIZE - 1) );
-        i2cWrite(value);
-        Wire.endTransmission();
-        eepromWait();
+    i2cBeginTransmission(EEPROM_ADDR);
+    i2cWrite( addr & (EEPROM_SIZE - 1) );
+    i2cWrite(value);
+    i2cEndTransmission();
+    eepromWait();
 }
 
 /*----------------------------------------------------------------------*
@@ -232,10 +241,10 @@ void MCP79412RTC::eepromWrite(byte addr, byte value)
 void MCP79412RTC::eepromWrite(byte addr, byte *values, byte nBytes)
 {
     if (nBytes >= 1 && nBytes <= EEPROM_PAGE_SIZE) {
-        Wire.beginTransmission(EEPROM_ADDR);
+        i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite( addr & ~(EEPROM_PAGE_SIZE - 1) & (EEPROM_SIZE - 1) );
         for (byte i=0; i<nBytes; i++) i2cWrite(values[i]);
-        Wire.endTransmission();
+        i2cEndTransmission();
         eepromWait();
     }
 }
@@ -263,11 +272,15 @@ byte MCP79412RTC::eepromRead(byte addr)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::eepromRead(byte addr, byte *values, byte nBytes)
 {
+#if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+    if (nBytes >= 1 && (addr + nBytes) <= EEPROM_SIZE) {
+#else
     if (nBytes >= 1 && nBytes <= BUFFER_LENGTH && (addr + nBytes) <= EEPROM_SIZE) {
-        Wire.beginTransmission(EEPROM_ADDR);
+#endif
+        i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite( addr & (EEPROM_SIZE - 1) );
-        Wire.endTransmission();  
-        Wire.requestFrom( (uint8_t)EEPROM_ADDR, nBytes );
+        i2cEndTransmission();  
+        i2cRequestFrom( (uint8_t)EEPROM_ADDR, nBytes );
         for (byte i=0; i<nBytes; i++) values[i] = i2cRead();
     }
 }
@@ -283,9 +296,9 @@ byte MCP79412RTC::eepromWait(void)
     do
     {
         ++waitCount;
-        Wire.beginTransmission(EEPROM_ADDR);
+        i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite((uint8_t)0);
-        txStatus = Wire.endTransmission();
+        txStatus = i2cEndTransmission();
         
     } while (txStatus != 0);
         
@@ -328,10 +341,10 @@ void MCP79412RTC::calibWrite(int value)
  *----------------------------------------------------------------------*/
 void MCP79412RTC::idRead(byte *uniqueID)
 {
-    Wire.beginTransmission(EEPROM_ADDR);
+    i2cBeginTransmission(EEPROM_ADDR);
     i2cWrite(UNIQUE_ID_ADDR);
-    Wire.endTransmission();  
-    Wire.requestFrom( EEPROM_ADDR, UNIQUE_ID_SIZE );
+    i2cEndTransmission();  
+    i2cRequestFrom( EEPROM_ADDR, UNIQUE_ID_SIZE );
     for (byte i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = i2cRead();
 }
 
@@ -365,11 +378,11 @@ boolean MCP79412RTC::powerFail(time_t *powerDown, time_t *powerUp)
     ramRead(YEAR_REG, &yr, 1);
     yr = y2kYearToTm(bcd2dec(yr));
     if ( day & _BV(VBAT) ) {
-        Wire.beginTransmission(RTC_ADDR);
+        i2cBeginTransmission(RTC_ADDR);
         i2cWrite(PWRDWN_TS_REG);
-        Wire.endTransmission();
+        i2cEndTransmission();
 
-        Wire.requestFrom(RTC_ADDR, TIMESTAMP_SIZE);     //read both timestamp registers, 8 bytes total
+        i2cRequestFrom(RTC_ADDR, TIMESTAMP_SIZE);     //read both timestamp registers, 8 bytes total
         dn.Second = 0;
         dn.Minute = bcd2dec(i2cRead());
         dn.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    //assumes 24hr clock
@@ -437,7 +450,7 @@ void MCP79412RTC::setAlarm(uint8_t alarmNumber, time_t alarmTime)
     alarmNumber &= 0x01;        //ensure a valid alarm number
     ramRead( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG) , &day, 1);
     breakTime(alarmTime, tm);
-    Wire.beginTransmission(RTC_ADDR);
+    i2cBeginTransmission(RTC_ADDR);
     i2cWrite( ALM0_REG + alarmNumber * (ALM1_REG - ALM0_REG) );
     i2cWrite(dec2bcd(tm.Second));
     i2cWrite(dec2bcd(tm.Minute));
@@ -445,7 +458,7 @@ void MCP79412RTC::setAlarm(uint8_t alarmNumber, time_t alarmTime)
     i2cWrite( (day & 0xF8) + tm.Wday );
     i2cWrite(dec2bcd(tm.Day));
     i2cWrite(dec2bcd(tm.Month));
-    Wire.endTransmission();  
+    i2cEndTransmission();  
 }
 
 /*----------------------------------------------------------------------*
@@ -537,12 +550,12 @@ void MCP79412RTC::alarmPolarity(boolean polarity)
  *----------------------------------------------------------------------*/
 boolean MCP79412RTC::isRunning(void)
 {
-    Wire.beginTransmission(RTC_ADDR);
+    i2cBeginTransmission(RTC_ADDR);
     i2cWrite((uint8_t)TIME_REG);
-    Wire.endTransmission();
+    i2cEndTransmission();
 
     //request just the seconds register
-    Wire.requestFrom(RTC_ADDR, 1);
+    i2cRequestFrom(RTC_ADDR, 1);
     return i2cRead() & _BV(ST);
 }
 
