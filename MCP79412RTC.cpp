@@ -560,6 +560,25 @@ boolean MCP79412RTC::isRunning(void)
 }
 
 /*----------------------------------------------------------------------*
+ * Set or clear the VBATEN bit. Setting the bit powers the clock and    *
+ * SRAM from the backup battery when Vcc falls. Note that setting the   *
+ * time via set() or write() sets the VBATEN bit.                       *
+ *----------------------------------------------------------------------*/
+void MCP79412RTC::vbaten(boolean enable)
+{
+    uint8_t day;
+    
+    ramRead(DAY_REG, &day, 1);
+    if (enable)
+        day |= _BV(VBATEN);
+    else
+        day &= ~_BV(VBATEN);
+        
+    ramWrite(DAY_REG, &day, 1);
+    return;
+}
+
+/*----------------------------------------------------------------------*
  * Decimal-to-BCD conversion                                            *
  *----------------------------------------------------------------------*/
 uint8_t MCP79412RTC::dec2bcd(uint8_t num)

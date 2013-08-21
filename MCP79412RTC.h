@@ -138,6 +138,7 @@ class MCP79412RTC
         void out(boolean level);
         void alarmPolarity(boolean polarity);
         boolean isRunning(void);
+        void vbaten(boolean enable);
 
     private:
         static void ramWrite(byte addr, byte value);

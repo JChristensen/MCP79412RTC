@@ -50,6 +50,9 @@ logger using the MCP79412RTC's ability to capture power down and power up times.
 Power failure events are logged to the MCP79412RTC's SRAM. Output is to the
 Arduino serial monitor.
 
+tiny79412_KnockBang: Demonstrates interfacing an ATtiny45/85 to the
+MCP79412.
+
 --------------------------------------------------------------------------------
 Similar to the DS1307RTC library, the MCP79412 library instantiates an RTC
 object; the user does not need to do this.
