@@ -39,7 +39,10 @@ rtcSet2: Similar to rtcSet1, a different way to hard-code the date and time.
 
 rtcSet3: Set the RTC to the sketch compile date and time.
 
-rtcSetSerial: Set the RTC via serial input from the Arduino monitor.
+SetSerial: Set the RTC's date, time, and calibration register from
+Arduino serial monitor.
+
+rtcSetSerial: Set the RTC via serial input from the Arduino serial monitor.
 
 TimeRTC: Same as the example of the same name provided with the Time library,
 demonstrating the interchangeability of the MCP79412RTC library with the
