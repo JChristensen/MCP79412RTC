@@ -1,11 +1,11 @@
-#Arduino MCP79412 RTC Library v1.0
+# Arduino MCP79412 RTC Library v1.0 #
 https://github.com/JChristensen/MCP79412RTC  
 ReadMe file  
 Jack Christensen Sep 2012
 
 ![CC BY-SA](http://mirrors.creativecommons.org/presskit/buttons/80x15/png/by-sa.png)
 
-##Introduction
+## Introduction ##
 **MCP79412RTC** is an Arduino library that supports the Microchip MCP79412 Real-Time Clock/Calendar.  It is intended to be used with the [Arduino Time library] (http://www.arduino.cc/playground/Code/Time).
 
 The **MCP79412RTC** library is a drop-in replacement for the **DS1307RTC** library by Michael Margolis that is supplied with the [Arduino Time library](http://www.arduino.cc/playground/Code/Time).  To change from using a DS1307 RTC to an MCP79412 RTC, it is only necessary to use `#include <MCP79412RTC.h>` instead of `#include <DS1307RTC.h>`.
@@ -18,14 +18,14 @@ The **MCP79412RTC** library also implements methods to support the additional fe
 The [Microchip MCP79412 Product Page](http://goo.gl/SHfKe0) for specs, datasheet, etc.  
 MCP79412 breakout boards are available at [my Tindie Store](http://goo.gl/UzAVcZ)  
 
-##Installation
+## Installation ##
 To use the **MCP79412RTC** library:  
 - Go to https://github.com/JChristensen/MCP79412RTC, click the **Download ZIP** button and save the ZIP file to a convenient location on your PC.
 - Uncompress the downloaded file.  This will result in a folder containing all the files for the library, that has a name that includes the branch name, usually **MCP79412RTC-master**.
 - Rename the folder to just **MCP79412RTC**.
 - Copy the renamed folder to the Arduino sketchbook\libraries folder.
 
-##Examples
+## Examples ##
 The following example sketches are included with the **MCP79412RTC** library:
 - **rtcSet1:** Set the RTC date and time using a hard-coded value in the sketch.
 - **rtcSet2:** Similar to **rtcSet1**, a different way to hard-code the date and time.
@@ -36,7 +36,7 @@ The following example sketches are included with the **MCP79412RTC** library:
 - **PowerOutageLogger:** A comprehensive example that implements a power failure logger using the MCP79412's ability to capture power down and power up times.  Power failure events are logged to the MCP79412's SRAM.  Output is to the Arduino serial monitor.
 - **tiny79412_KnockBang:** Demonstrates interfacing an ATtiny45/85 to the MCP79412.
 
-#Usage notes
+## Usage notes ##
 Similar to the **DS1307RTC** library, the **MCP79412RTC** library instantiates an RTC object; the user does not need to do this.
 
 To use the **MCP79412RTC** library, the Time and Wire libraries must also be included.  For brevity, these includes are not repeated in the examples below:
@@ -46,7 +46,7 @@ To use the **MCP79412RTC** library, the Time and Wire libraries must also be inc
 #include <Wire.h>           //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
 ```
 
-##Methods for setting and reading the time
+## Methods for setting and reading the time ##
 
 ###get(void)
 #####Description
@@ -139,7 +139,7 @@ else
 	//do something else
 ```
 
-##Methods for reading and writing static RAM (SRAM)
+## Methods for reading and writing static RAM (SRAM) ##
 The MCP79412 RTC has 64 bytes of battery-backed SRAM that can be read and written with the following methods using addresses between 0 and 63.  Addresses passed to these functions are constrained to the valid range by an AND function.
 
 ###sramWrite(byte addr, byte value)
@@ -208,7 +208,7 @@ byte buf[8];
 RTC.sramRead(56, buf, 8);
 ```
 	
-##Methods for Reading and writing EEPROM
+## Methods for Reading and writing EEPROM ##
 The MCP79412 RTC has 128 bytes of non-volatile EEPROM that can be read and written with the following methods using addresses between 0 and 127.  Addresses passed to these functions are constrained to the valid range by an AND function.
 
 EEPROM is paged memory with a page size of 8 bytes; when writing multiple bytes, this this limits the number of bytes that can be written at one time to 8.  Page writes must start on a page boundary.
@@ -279,7 +279,7 @@ byte buf[8];
 RTC.eepromRead(120, buf, 8);
 ```
 
-##Alarm methods
+## Alarm methods ##
 The MCP79412 RTC has two alarms (Alarm-0 and Alarm-1) that can be used separately or simultaneously.  When an alarm is triggered, a flag is set in the RTC that can be detected with the `alarm()` function below.  Optionally, the RTC's Multi-Function Pin (MFP) can be driven to either a low or high logic level when an alarm is triggered.  When using the MFP with both alarms, be sure to read the comments on the `alarmPolarity()` function below.
 
 ###setAlarm(byte alarmNumber, time_t alarmTime)
@@ -362,7 +362,7 @@ None.
 RTC.alarmPolarity(HIGH);    //drives MFP high when an alarm is triggered
 ```
 
-##Calibration, power failure, and other methods
+## Calibration, power failure, and other methods ##
 
 ###calibWrite(int value)
 #####Description
