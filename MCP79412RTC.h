@@ -1,16 +1,16 @@
 /*----------------------------------------------------------------------*
- * MCP79412RTC.h - Arduino library for the Microchip MCP79412           *
- * Real-Time Clock. This library is intended for use with the Arduino   *
+ * MCP79412RTC.h - Arduino library for the Microchip MCP7941x           *
+ * Real-Time Clocks. This library is intended for use with the Arduino  *
  * Time.h library, http://www.arduino.cc/playground/Code/Time           *
  *                                                                      *
  * This library is a drop-in replacement for the DS1307RTC.h library    *
  * by Michael Margolis that is supplied with the Arduino Time library   *
- * above. To change from using a DS1307 RTC to an MCP79412 RTC, it is   *
+ * above. To change from using a DS1307 RTC to an MCP7941x RTC, it is   *
  * only necessary to change the #include statement to include this      *
  * library instead of DS1307RTC.h.                                      *
  *                                                                      *
  * In addition, this library implements functions to support the        *
- * additional features of the MCP79412.                                 *
+ * additional features of the MCP7941x.                                 *
  *                                                                      *
  * Jack Christensen 29Jul2012                                           *
  *                                                                      *
@@ -130,6 +130,7 @@ class MCP79412RTC
         int calibRead(void);
         void calibWrite(int value);
         void idRead(byte *uniqueID);
+        void getEUI64(byte *uniqueID);
         boolean powerFail(time_t *powerDown, time_t *powerUp);
         void squareWave(uint8_t freq);
         void setAlarm(uint8_t alarmNumber, time_t alarmTime);

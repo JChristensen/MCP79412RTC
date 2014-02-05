@@ -6,17 +6,17 @@ Jack Christensen Sep 2012
 ![CC BY-SA](http://mirrors.creativecommons.org/presskit/buttons/80x15/png/by-sa.png)
 
 ## Introduction ##
-**MCP79412RTC** is an Arduino library that supports the Microchip MCP79412 Real-Time Clock/Calendar.  It is intended to be used with the [Arduino Time library] (http://www.arduino.cc/playground/Code/Time).
+**MCP79412RTC** is an Arduino library that supports the Microchip MCP7941x Real-Time Clock/Calendar chips.  It is intended to be used with the [Arduino Time library] (http://www.arduino.cc/playground/Code/Time).
 
-The **MCP79412RTC** library is a drop-in replacement for the **DS1307RTC** library by Michael Margolis that is supplied with the [Arduino Time library](http://www.arduino.cc/playground/Code/Time).  To change from using a DS1307 RTC to an MCP79412 RTC, it is only necessary to use `#include <MCP79412RTC.h>` instead of `#include <DS1307RTC.h>`.
+The **MCP79412RTC** library is a drop-in replacement for the **DS1307RTC** library by Michael Margolis that is supplied with the [Arduino Time library](http://www.arduino.cc/playground/Code/Time).  To change from using a DS1307 RTC to an MCP7941x RTC, it is only necessary to use `#include <MCP79412RTC.h>` instead of `#include <DS1307RTC.h>`.
 
-The **MCP79412RTC** library also implements methods to support the additional features of the MCP79412 RTC.
+The **MCP79412RTC** library also implements methods to support the additional features of the MCP7941x RTC.
 
 **For more information on the MCP79412, see:**  
 [My Blog Post](http://goo.gl/MkBnjR), summarizing the features and advantages of the MCP79412  
 [My Power Outage Logger Project](http://goo.gl/RfM5os), an Arduino-based project featuring the MCP79412  
 The [Microchip MCP79412 Product Page](http://goo.gl/SHfKe0) for specs, datasheet, etc.  
-MCP79412 breakout boards are available at [my Tindie Store](http://goo.gl/UzAVcZ)  
+MCP79411 and MCP79412 breakout boards are available at [my Tindie Store](http://goo.gl/UzAVcZ)  
 
 ## Installation ##
 To use the **MCP79412RTC** library:  
@@ -462,4 +462,20 @@ No function value returned.  The RTC's ID is returned to the **uniqueID** array.
 ```c++
 byte buf[8];
 RTC.idRead(buf);
+```
+--------------------------------------------------------------------------------
+
+###getEUI64(byte *uniqueID)
+#####Description
+Returns an EUI-64 ID. For an MCP79412, calling this function is equivalent to calling `idRead()`. For an MCP79411, the EUI-48 ID is converted to EUI-64. Caller must provide an 8-byte array to contain the results.
+#####Syntax
+`RTC.getEUI64(byte *uniqueID);`
+#####Parameters
+**uniqueID:** An 8-byte array to receive the EUI-64 unique ID _(*byte)_
+#####Returns
+No function value returned.  The EUI-64 ID is returned to the **uniqueID** array.
+#####Example
+```c++
+byte buf[8];
+RTC.getEUI64(buf);
 ```

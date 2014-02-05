@@ -1,16 +1,16 @@
 /*----------------------------------------------------------------------*
- * MCP79412RTC.cpp - Arduino library for the Microchip MCP79412         *
- * Real-Time Clock. This library is intended for use with the Arduino   *
+ * MCP79412RTC.cpp - Arduino library for the Microchip MCP7941x         *
+ * Real-Time Clocks. This library is intended for use with the Arduino  *
  * Time.h library, http://www.arduino.cc/playground/Code/Time           *
  *                                                                      *
  * This library is a drop-in replacement for the DS1307RTC.h library    *
  * by Michael Margolis that is supplied with the Arduino Time library   *
- * above. To change from using a DS1307 RTC to an MCP79412 RTC, it is   *
+ * above. To change from using a DS1307 RTC to an MCP7941x RTC, it is   *
  * only necessary to change the #include statement to include this      *
  * library instead of DS1307RTC.h.                                      *
  *                                                                      *
  * In addition, this library implements functions to support the        *
- * additional features of the MCP79412.                                 *
+ * additional features of the MCP7941x.                                 *
  *                                                                      *
  * Jack Christensen 29Jul2012                                           *
  *                                                                      *
@@ -337,6 +337,7 @@ void MCP79412RTC::calibWrite(int value)
 
 /*----------------------------------------------------------------------*
  * Read the unique ID.                                                  *
+ * For the MCP79411 (EUI-48), the first two bytes will contain 0xFF.    *
  * Caller must provide an 8-byte array to contain the results.          *
  *----------------------------------------------------------------------*/
 void MCP79412RTC::idRead(byte *uniqueID)
@@ -346,6 +347,28 @@ void MCP79412RTC::idRead(byte *uniqueID)
     i2cEndTransmission();  
     i2cRequestFrom( EEPROM_ADDR, UNIQUE_ID_SIZE );
     for (byte i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = i2cRead();
+}
+
+/*----------------------------------------------------------------------*
+ * Returns an EUI-64 ID. For an MCP79411, the EUI-48 ID is converted to *
+ * EUI-64. For an MCP79412, calling this function is equivalent to      *
+ * calling idRead(). For an MCP79412, if the RTC type is known, calling *
+ * idRead() will be a bit more efficient.                               *
+ * Caller must provide an 8-byte array to contain the results.          *
+ *----------------------------------------------------------------------*/
+void MCP79412RTC::getEUI64(byte *uniqueID)
+{
+    byte rtcID[8];
+    
+    idRead(rtcID);
+    if (rtcID[0] == 0xFF && rtcID[1] == 0xFF) {
+        rtcID[0] = rtcID[2];
+        rtcID[1] = rtcID[3];
+        rtcID[2] = rtcID[4];
+        rtcID[3] = 0xFF;
+        rtcID[4] = 0xFE;
+    }
+    for (byte i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = rtcID[i];
 }
 
 /*----------------------------------------------------------------------*
