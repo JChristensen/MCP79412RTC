@@ -1,7 +1,7 @@
 # Arduino MCP79412 RTC Library v1.0 #
 https://github.com/JChristensen/MCP79412RTC  
 LICENSE file  
-Jack Christensen Mar 2012  
+Jack Christensen Sep 2012  
 
 ![CC BY-SA](http://mirrors.creativecommons.org/presskit/buttons/88x31/png/by-sa.png)
 ## CC BY-SA ##

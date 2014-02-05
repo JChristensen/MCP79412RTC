@@ -37,7 +37,7 @@ MCP79412RTC::MCP79412RTC()
  * Read the current time from the RTC and return it as a time_t value.  *
  * Returns a zero value if RTC not present (I2C I/O error).             *
  *----------------------------------------------------------------------*/
-time_t MCP79412RTC::get()
+time_t MCP79412RTC::get(void)
 {
     tmElements_t tm;
     

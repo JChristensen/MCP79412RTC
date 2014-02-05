@@ -50,7 +50,7 @@ To use the **MCP79412RTC** library, the Time and Wire libraries must also be inc
 
 ###get(void)
 #####Description
-Reads the current date and time from the RTC and returns it as a *time_t* value.
+Reads the current date and time from the RTC and returns it as a *time_t* value. Returns zero if an I2C error occurs (RTC not present, etc.).
 #####Syntax
 `RTC.get();`
 #####Parameters
@@ -83,13 +83,13 @@ RTC.set(now());                     //set the RTC from the system time
 
 ###read(tmElements_t &tm)
 #####Description
-Reads the current date and time from the RTC and returns it as a *tmElements_t* structure.  See the [Arduino Time library](http://www.arduino.cc/playground/Code/Time) for details on the *tmElements_t* structure.
+Reads the current date and time from the RTC and returns it as a *tmElements_t* structure. Returns *false* if an I2C error occurs (RTC not present, etc.).  See the [Arduino Time library](http://www.arduino.cc/playground/Code/Time) for details on the *tmElements_t* structure.
 #####Syntax
 `RTC.read(tm);`
 #####Parameters
 **tm:** Address of a *tmElements_t* structure to which the date and time are returned.
 #####Returns
-No function value returned.  The date and time read from the RTC are returned to the **tm** parameter.
+False if an I2C error occurred, else true.  The date and time read from the RTC are returned to the **tm** parameter.
 #####Example
 ```c++
 tmElements_t tm;
