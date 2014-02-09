@@ -43,7 +43,7 @@ void setup(void)
 {
     byte rtcID[8];
     
-    Serial.begin(115200);
+    Serial.begin(57600);
     
     //setSyncProvider() causes the Time library to synchronize with the
     //external RTC by calling RTC.get() every five minutes by default.
@@ -59,6 +59,15 @@ void setup(void)
         Serial << _HEX(rtcID[i]);
     }
     Serial << endl;
+
+    RTC.getEUI64(rtcID);
+    Serial << F("EUI-64 = ");
+    for (int i=0; i<8; ++i) {
+        if (rtcID[i] < 16) Serial << '0';
+        Serial << _HEX(rtcID[i]);
+    }
+    Serial << endl;
+    
     Serial << F("Calibration Register = ") << RTC.calibRead() << endl;
 }
 
