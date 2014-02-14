@@ -34,7 +34,7 @@
  * San Francisco, California, 94105, USA.                               *
  *----------------------------------------------------------------------*/ 
  
-#include <MCP79412RTC.h>      //http://github.com/JChristensen/MPC79412RTC
+#include <MCP79412RTC.h>      //http://github.com/JChristensen/MCP79412RTC
 #include <Streaming.h>        //http://arduiniana.org/libraries/streaming/
 #include <Time.h>             //http://playground.arduino.cc/Code/Time
 #include <Wire.h>             //http://arduino.cc/en/Reference/Wire
