@@ -72,9 +72,9 @@ void readCommand()
             tmSet.Hour = 10 * (cmd[15] - '0') + cmd[16] - '0';
             tmSet.Minute = 10 * (cmd[18] - '0') + cmd[19] - '0';
             tmSet.Second = 10 * (cmd[21] - '0') + cmd[22] - '0';
-            tSet = makeTime(tmSet);		 //convert to time_t
-            setTime(tSet);			 //set the system time
-            RTC.set(now());		         //set the rtc
+            tSet = makeTime(tmSet);      //convert to time_t
+            setTime(tSet);           //set the system time
+            RTC.set(now());              //set the rtc
             Serial.println("RTC set!");
             flushInput();                        //discard any extraneous trailing characters
         }

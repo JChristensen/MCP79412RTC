@@ -29,12 +29,13 @@ void setup(void)
     delay(2000);
     Serial.begin(9600);
     
-    tm.Hour = 23;             //set the tm structure to 23h31m30s on 13Feb2009
+    tm.Hour = 23;             //set the tm structure to 23h31m30s on Fri 13Feb2009
     tm.Minute = 31;
     tm.Second = 30;
     tm.Year = 2009 - 1970;    //tmElements_t.Year is the offset from 1970.
     tm.Month = 2;
     tm.Day = 13;
+    tm.Wday = dowFriday;      //See enum in Time.h: Sun=1, Mon=2, ... Sat=7
     RTC.write(tm);            //set the RTC from the tm structure
 }
 
