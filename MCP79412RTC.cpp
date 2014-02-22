@@ -19,11 +19,36 @@
  * visit http://creativecommons.org/licenses/by-sa/3.0/ or send a       *
  * letter to Creative Commons, 171 Second Street, Suite 300,            *
  * San Francisco, California, 94105, USA.                               *
- *----------------------------------------------------------------------*/ 
+ *----------------------------------------------------------------------*/
 
-#include <Wire.h>
-#include <TinyWireM.h>
 #include "MCP79412RTC.h"
+
+//define release-independent I2C functions
+#if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+#include <TinyWireM.h>
+#define i2cBegin TinyWireM.begin
+#define i2cBeginTransmission TinyWireM.beginTransmission
+#define i2cEndTransmission TinyWireM.endTransmission
+#define i2cRequestFrom TinyWireM.requestFrom
+#define i2cRead TinyWireM.receive
+#define i2cWrite TinyWireM.send
+#elif ARDUINO >= 100
+#include <Wire.h>
+#define i2cBegin Wire.begin
+#define i2cBeginTransmission Wire.beginTransmission
+#define i2cEndTransmission Wire.endTransmission
+#define i2cRequestFrom Wire.requestFrom
+#define i2cRead Wire.read
+#define i2cWrite Wire.write
+#else
+#include <Wire.h>
+#define i2cBegin Wire.begin
+#define i2cBeginTransmission Wire.beginTransmission
+#define i2cEndTransmission Wire.endTransmission
+#define i2cRequestFrom Wire.requestFrom
+#define i2cRead Wire.receive
+#define i2cWrite Wire.send
+#endif
 
 /*----------------------------------------------------------------------*
  * Constructor.                                                         *
@@ -32,7 +57,7 @@ MCP79412RTC::MCP79412RTC()
 {
     i2cBegin();
 }
-  
+
 /*----------------------------------------------------------------------*
  * Read the current time from the RTC and return it as a time_t value.  *
  * Returns a zero value if RTC not present (I2C I/O error).             *
@@ -40,7 +65,7 @@ MCP79412RTC::MCP79412RTC()
 time_t MCP79412RTC::get(void)
 {
     tmElements_t tm;
-    
+
     if ( read(tm) )
         return( makeTime(tm) );
     else
@@ -55,7 +80,7 @@ void MCP79412RTC::set(time_t t)
     tmElements_t tm;
 
     breakTime(t, tm);
-    write(tm); 
+    write(tm);
 }
 
 /*----------------------------------------------------------------------*
@@ -72,7 +97,7 @@ boolean MCP79412RTC::read(tmElements_t &tm)
     else {
         //request 7 bytes (secs, min, hr, dow, date, mth, yr)
         i2cRequestFrom(RTC_ADDR, tmNbrFields);
-        tm.Second = bcd2dec(i2cRead() & ~_BV(ST));   
+        tm.Second = bcd2dec(i2cRead() & ~_BV(ST));
         tm.Minute = bcd2dec(i2cRead());
         tm.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    //assumes 24hr clock
         tm.Wday = i2cRead() & ~(_BV(OSCON) | _BV(VBAT) | _BV(VBATEN));    //mask off OSCON, VBAT, VBATEN bits
@@ -90,19 +115,19 @@ void MCP79412RTC::write(tmElements_t &tm)
 {
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite((uint8_t)TIME_REG);
-    i2cWrite((uint8_t)0x00);                     //stops the oscillator (Bit 7, ST == 0)   
+    i2cWrite((uint8_t)0x00);                     //stops the oscillator (Bit 7, ST == 0)
     i2cWrite(dec2bcd(tm.Minute));
     i2cWrite(dec2bcd(tm.Hour));                  //sets 24 hour format (Bit 6 == 0)
     i2cWrite(tm.Wday | _BV(VBATEN));             //enable battery backup operation
     i2cWrite(dec2bcd(tm.Day));
     i2cWrite(dec2bcd(tm.Month));
-    i2cWrite(dec2bcd(tmYearToY2k(tm.Year))); 
-    i2cEndTransmission();  
+    i2cWrite(dec2bcd(tmYearToY2k(tm.Year)));
+    i2cEndTransmission();
 
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite((uint8_t)TIME_REG);
     i2cWrite(dec2bcd(tm.Second) | _BV(ST));    //set the seconds and start the oscillator (Bit 7, ST == 1)
-    i2cEndTransmission();  
+    i2cEndTransmission();
 }
 
 /*----------------------------------------------------------------------*
@@ -125,7 +150,7 @@ void MCP79412RTC::ramWrite(byte addr, byte *values, byte nBytes)
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
     for (byte i=0; i<nBytes; i++) i2cWrite(values[i]);
-    i2cEndTransmission();  
+    i2cEndTransmission();
 }
 
 /*----------------------------------------------------------------------*
@@ -135,7 +160,7 @@ void MCP79412RTC::ramWrite(byte addr, byte *values, byte nBytes)
 byte MCP79412RTC::ramRead(byte addr)
 {
     byte value;
-    
+
     ramRead(addr, &value, 1);
     return value;
 }
@@ -150,7 +175,7 @@ void MCP79412RTC::ramRead(byte addr, byte *values, byte nBytes)
 {
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
-    i2cEndTransmission();  
+    i2cEndTransmission();
     i2cRequestFrom( (uint8_t)RTC_ADDR, nBytes );
     for (byte i=0; i<nBytes; i++) values[i] = i2cRead();
 }
@@ -191,7 +216,7 @@ void MCP79412RTC::sramWrite(byte addr, byte *values, byte nBytes)
 byte MCP79412RTC::sramRead(byte addr)
 {
     byte value;
-    
+
     ramRead( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, &value, 1 );
     return value;
 }
@@ -257,7 +282,7 @@ byte MCP79412RTC::eepromRead(byte addr)
 {
     byte value;
 
-    eepromRead( addr & (EEPROM_SIZE - 1), &value, 1 );    
+    eepromRead( addr & (EEPROM_SIZE - 1), &value, 1 );
     return value;
 }
 
@@ -279,7 +304,7 @@ void MCP79412RTC::eepromRead(byte addr, byte *values, byte nBytes)
 #endif
         i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite( addr & (EEPROM_SIZE - 1) );
-        i2cEndTransmission();  
+        i2cEndTransmission();
         i2cRequestFrom( (uint8_t)EEPROM_ADDR, nBytes );
         for (byte i=0; i<nBytes; i++) values[i] = i2cRead();
     }
@@ -292,16 +317,16 @@ byte MCP79412RTC::eepromWait(void)
 {
     byte waitCount = 0;
     byte txStatus;
-    
+
     do
     {
         ++waitCount;
         i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite((uint8_t)0);
         txStatus = i2cEndTransmission();
-        
+
     } while (txStatus != 0);
-        
+
     return waitCount;
 }
 
@@ -314,9 +339,9 @@ byte MCP79412RTC::eepromWait(void)
 int MCP79412RTC::calibRead(void)
 {
     byte val = ramRead(CALIB_REG);
-    
+
     if ( val & 0x80 ) return -(val & 0x7F);
-    else return val;   
+    else return val;
 }
 
 /*----------------------------------------------------------------------*
@@ -327,7 +352,7 @@ int MCP79412RTC::calibRead(void)
 void MCP79412RTC::calibWrite(int value)
 {
     byte calibVal;
-    
+
     if (value >= -127 && value <= 127) {
         calibVal = abs(value);
         if (value < 0) calibVal += 128;
@@ -344,7 +369,7 @@ void MCP79412RTC::idRead(byte *uniqueID)
 {
     i2cBeginTransmission(EEPROM_ADDR);
     i2cWrite(UNIQUE_ID_ADDR);
-    i2cEndTransmission();  
+    i2cEndTransmission();
     i2cRequestFrom( EEPROM_ADDR, UNIQUE_ID_SIZE );
     for (byte i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = i2cRead();
 }
@@ -359,7 +384,7 @@ void MCP79412RTC::idRead(byte *uniqueID)
 void MCP79412RTC::getEUI64(byte *uniqueID)
 {
     byte rtcID[8];
-    
+
     idRead(rtcID);
     if (rtcID[0] == 0xFF && rtcID[1] == 0xFF) {
         rtcID[0] = rtcID[2];
@@ -418,10 +443,10 @@ boolean MCP79412RTC::powerFail(time_t *powerDown, time_t *powerUp)
         up.Day = bcd2dec(i2cRead());
         up.Month = bcd2dec(i2cRead() & 0x1F);           //mask off the day, we don't need it
         up.Year = yr;                                   //assume current year
-        
+
         *powerDown = makeTime(dn);
         *powerUp = makeTime(up);
-        
+
         //clear the VBAT bit, which causes the RTC hardware to clear the timestamps too.
         //I suppose there is a risk here that the day has changed since we read it,
         //but the Day of Week is actually redundant data and the makeTime() function
@@ -481,7 +506,7 @@ void MCP79412RTC::setAlarm(uint8_t alarmNumber, time_t alarmTime)
     i2cWrite( (day & 0xF8) + tm.Wday );
     i2cWrite(dec2bcd(tm.Day));
     i2cWrite(dec2bcd(tm.Month));
-    i2cEndTransmission();  
+    i2cEndTransmission();
 }
 
 /*----------------------------------------------------------------------*
@@ -534,7 +559,7 @@ boolean MCP79412RTC::alarm(uint8_t alarmNumber)
 void MCP79412RTC::out(boolean level)
 {
     uint8_t ctrlReg;
-    
+
     ramRead(CTRL_REG, &ctrlReg, 1);
     if (level)
         ctrlReg |= _BV(OUT);
@@ -558,7 +583,7 @@ void MCP79412RTC::out(boolean level)
 void MCP79412RTC::alarmPolarity(boolean polarity)
 {
     uint8_t alm0Day;
-    
+
     ramRead(ALM0_DAY, &alm0Day, 1);
     if (polarity)
         alm0Day |= _BV(OUT);
@@ -590,13 +615,13 @@ boolean MCP79412RTC::isRunning(void)
 void MCP79412RTC::vbaten(boolean enable)
 {
     uint8_t day;
-    
+
     ramRead(DAY_REG, &day, 1);
     if (enable)
         day |= _BV(VBATEN);
     else
         day &= ~_BV(VBATEN);
-        
+
     ramWrite(DAY_REG, &day, 1);
     return;
 }
@@ -604,17 +629,17 @@ void MCP79412RTC::vbaten(boolean enable)
 /*----------------------------------------------------------------------*
  * Decimal-to-BCD conversion                                            *
  *----------------------------------------------------------------------*/
-uint8_t MCP79412RTC::dec2bcd(uint8_t num)
+uint8_t MCP79412RTC::dec2bcd(uint8_t n)
 {
-    return ((num / 10 * 16) + (num % 10));
+    return n + 6 * (n / 10);
 }
 
 /*----------------------------------------------------------------------*
  * BCD-to-Decimal conversion                                            *
  *----------------------------------------------------------------------*/
-uint8_t MCP79412RTC::bcd2dec(uint8_t num)
+uint8_t __attribute__ ((noinline)) MCP79412RTC::bcd2dec(uint8_t n)
 {
-    return ((num / 16 * 10) + (num % 16));
+    return n - 6 * (n >> 4);
 }
 
 MCP79412RTC RTC = MCP79412RTC();    //instantiate an RTC object

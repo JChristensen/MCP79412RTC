@@ -19,40 +19,16 @@
  * visit http://creativecommons.org/licenses/by-sa/3.0/ or send a       *
  * letter to Creative Commons, 171 Second Street, Suite 300,            *
  * San Francisco, California, 94105, USA.                               *
- *----------------------------------------------------------------------*/ 
+ *----------------------------------------------------------------------*/
 
 #ifndef MCP79412RTC_h
 #define MCP79412RTC_h
 #include <Time.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
-#include <Arduino.h> 
+#include <Arduino.h>
 #else
-#include <WProgram.h> 
-#endif
-
-//define release-independent I2C functions
-#if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
-#define i2cBegin TinyWireM.begin
-#define i2cBeginTransmission TinyWireM.beginTransmission
-#define i2cEndTransmission TinyWireM.endTransmission
-#define i2cRequestFrom TinyWireM.requestFrom
-#define i2cRead TinyWireM.receive
-#define i2cWrite TinyWireM.send
-#elif ARDUINO >= 100
-#define i2cBegin Wire.begin
-#define i2cBeginTransmission Wire.beginTransmission
-#define i2cEndTransmission Wire.endTransmission
-#define i2cRequestFrom Wire.requestFrom
-#define i2cRead Wire.read
-#define i2cWrite Wire.write
-#else
-#define i2cBegin Wire.begin
-#define i2cBeginTransmission Wire.beginTransmission
-#define i2cEndTransmission Wire.endTransmission
-#define i2cRequestFrom Wire.requestFrom
-#define i2cRead Wire.receive
-#define i2cWrite Wire.send
+#include <WProgram.h>
 #endif
 
 //MCP7941x I2C Addresses
@@ -62,7 +38,7 @@
 //MCP7941x Register Addresses
 #define TIME_REG 0x00        //7 registers, Seconds, Minutes, Hours, DOW, Date, Month, Year
 #define DAY_REG 0x03         //the RTC Day register contains the OSCON, VBAT, and VBATEN bits
-#define YEAR_REG 0x06        //RTC year register   
+#define YEAR_REG 0x06        //RTC year register
 #define CTRL_REG 0x07        //control register
 #define CALIB_REG 0x08       //calibration register
 #define UNLOCK_ID_REG 0x09   //unlock ID register
@@ -93,7 +69,7 @@ enum {SQWAVE_1_HZ, SQWAVE_4096_HZ, SQWAVE_8192_HZ, SQWAVE_32768_HZ, SQWAVE_NONE}
 //Other Control Bits
 #define ST 7        //Seconds register (TIME_REG) oscillator start/stop bit, 1==Start, 0==Stop
 #define HR1224 6    //Hours register (TIME_REG+2) 12 or 24 hour mode (24 hour mode==0)
-#define AMPM 5      //Hours register (TIME_REG+2) AM/PM bit for 12 hour mode 
+#define AMPM 5      //Hours register (TIME_REG+2) AM/PM bit for 12 hour mode
 #define OSCON 5     //Day register (TIME_REG+3) oscillator running (set and cleared by hardware)
 #define VBAT 4      //Day register (TIME_REG+3) set by hardware when Vcc fails and RTC runs on battery.
                     //VBAT is cleared by software, clearing VBAT also clears the timestamp registers

@@ -465,6 +465,21 @@ RTC.idRead(buf);
 ```
 --------------------------------------------------------------------------------
 
+###vbaten(boolean enable)
+#####Description
+Set or clear the VBATEN bit. Setting the bit powers the clock and SRAM from the backup battery when Vcc falls. Note that setting the time via set() or write() sets the VBATEN bit.                 
+#####Syntax
+`RTC.vbaten(boolean enable);`
+#####Parameters
+**enable:** true or false *(boolean)*
+#####Returns
+None.
+#####Example
+```c++
+RTC.vbaten(false);
+```
+--------------------------------------------------------------------------------
+
 ###getEUI64(byte *uniqueID)
 #####Description
 Returns an EUI-64 ID. For an MCP79412, calling this function is equivalent to calling `idRead()`. For an MCP79411, the EUI-48 ID is converted to EUI-64. Caller must provide an 8-byte array to contain the results.
