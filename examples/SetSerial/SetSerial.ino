@@ -43,7 +43,7 @@ void setup(void)
 {
     byte rtcID[8];
     
-    Serial.begin(57600);
+    Serial.begin(115200);
     
     //setSyncProvider() causes the Time library to synchronize with the
     //external RTC by calling RTC.get() every five minutes by default.
