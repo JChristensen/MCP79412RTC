@@ -5,7 +5,7 @@
  * only the #include statement has been changed to include the MCP79412RTC library.
  */
 
-#include <Time.h>  
+#include <TimeLib.h>  
 #include <Wire.h>  
 #include <MCP79412RTC.h>  //http://github.com/JChristensen/MCP79412RTC
 

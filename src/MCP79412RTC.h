@@ -23,7 +23,7 @@
 
 #ifndef MCP79412RTC_h
 #define MCP79412RTC_h
-#include <Time.h>
+#include <TimeLib.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include <Arduino.h>

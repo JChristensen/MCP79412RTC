@@ -22,7 +22,7 @@
  *----------------------------------------------------------------------*/ 
 
 #include <MCP79412RTC.h>           //http://github.com/JChristensen/MCP79412RTC
-#include <Time.h>                  //http://playground.arduino.cc/Code/Time
+#include <TimeLib.h>               //http://playground.arduino.cc/Code/Time
 #include <TinyDebugKnockBang.h>    //http://code.google.com/p/arduino-tiny/
 #include <TinyWireM.h>             //http://playground.arduino.cc/Code/USIi2c
 
