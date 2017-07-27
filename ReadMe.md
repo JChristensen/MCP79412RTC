@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/JChristensen/MCP79412RTC.svg?branch=master)](https://travis-ci.org/JChristensen/MCP79412RTC)
 # Arduino MCP79412 RTC Library v1.0 #
 https://github.com/JChristensen/MCP79412RTC  
 ReadMe file  
