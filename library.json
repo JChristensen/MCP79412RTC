@@ -1,7 +1,7 @@
 {
   "name": "MCP79412RTC",
   "keywords": "RTC, i2c",
-  "description": "RTC Library for Maxim MCP79412 chip",
+  "description": "RTC Library for Microchip MCP79412 chip",
   "repository":
   {
     "type": "git",
