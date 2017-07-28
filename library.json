@@ -7,6 +7,12 @@
     "type": "git",
     "url": "https://github.com/JChristensen/MCP79412RTC"
   },
+  "dependencies":
+  {
+    "name": "Time",
+    "authors": "Paul Stoffregen",
+    "frameworks": "arduino"
+  },
   "frameworks": "Arduino",
   "platforms": "atmelavr"
 }
