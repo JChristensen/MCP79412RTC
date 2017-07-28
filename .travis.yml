@@ -1,0 +1,22 @@
+language: python
+python:
+    - "2.7"
+
+# Cache PlatformIO packages using Travis CI container-based infrastructure
+sudo: false
+cache:
+    directories:
+        - "~/.platformio"
+
+env:
+    - PLATFORMIO_CI_SRC=examples/TimeRTC/
+    - PLATFORMIO_CI_SRC=examples/rtcSetSerial/
+    - PLATFORMIO_CI_SRC=examples/rtcSet1
+    - PLATFORMIO_CI_SRC=examples/rtcSet2
+    - PLATFORMIO_CI_SRC=examples/rtcSet3
+
+install:
+    - pip install -U platformio
+
+script:
+    - platformio ci --lib=. --board=moteino --board uno --board=moteinomega
