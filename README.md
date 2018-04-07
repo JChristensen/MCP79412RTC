@@ -1,4 +1,4 @@
-# Arduino MCP79412 RTC Library v1.0 #
+# Arduino MCP79412 RTC Library
 https://github.com/JChristensen/MCP79412RTC  
 ReadMe file  
 Jack Christensen  
