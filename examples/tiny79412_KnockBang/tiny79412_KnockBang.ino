@@ -1,44 +1,41 @@
-/*----------------------------------------------------------------------*
- * Digital clock display using an MCP79412 Real-Time Clock/Calendar     *
- * and an ATtiny45/85 with a 1MHz system clock.                         *
- *                                                                      *
- * Tested with Arduino 1.0.5. Also Arduino-Tiny Core, TinyISP, and      *
- * TinyDebugKnockBang from http://code.google.com/p/arduino-tiny/       *
- *                                                                      *
- * Run TinyISP on an ATmega microcontroller that does not have an LED   *
- * connected to pin 13 (SCK). The LED causes problems because the SPI   *
- * pins are also the I2C pins on the ATtiny. Connect MISO, MOSI, SCK    *
- * on the ATmega to the corresponding pins on the ATtiny through 220Ω   *
- * resistors for safety. Use 4.7K pullup resistors on the ATtiny        *    
- * I2C bus.                                                             *
- *                                                                      *
- * Jack Christensen 21Aug2013                                           *
- *                                                                      *
- * This work is licensed under the Creative Commons Attribution-        *
- * ShareAlike 3.0 Unported License. To view a copy of this license,     *
- * visit http://creativecommons.org/licenses/by-sa/3.0/ or send a       *
- * letter to Creative Commons, 171 Second Street, Suite 300,            *
- * San Francisco, California, 94105, USA.                               *
- *----------------------------------------------------------------------*/ 
+// Arduino MCP79412RTC Library
+// https://github.com/JChristensen/MCP79412RTC
+// Copyright (C) 2018 by Jack Christensen and licensed under
+// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
+//
+// Example sketch. Digital clock display using an MCP79412 Real-Time
+//  Clock/Calendar and an ATtiny45/85 with a 1MHz system clock.
+//
+// Tested with Arduino 1.8.5, and:
+//   ATTinyCore, https://github.com/SpenceKonde/ATTinyCore
+//   TinyISP, https://github.com/Coding-Badly/TinyISP
+//
+// Run TinyISP on an ATmega microcontroller that does not have an LED
+// connected to pin 13 (SCK). The LED causes problems because the SPI
+// pins are also the I2C pins on the ATtiny. Connect MISO, MOSI, SCK
+// on the ATmega to the corresponding pins on the ATtiny through 220Ω
+// resistors for safety. Use 4.7K pullup resistors on the ATtiny
+// I2C bus.
+//
+// Jack Christensen 21Aug2013
 
-#include <MCP79412RTC.h>           //http://github.com/JChristensen/MCP79412RTC
-#include <Time.h>                  //http://playground.arduino.cc/Code/Time
-#include <TinyDebugKnockBang.h>    //http://code.google.com/p/arduino-tiny/
-#include <TinyWireM.h>             //http://playground.arduino.cc/Code/USIi2c
+#include <MCP79412RTC.h>            // https://github.com/JChristensen/MCP79412RTC
+#include <TimeLib.h>                // https://github.com/PaulStoffregen/Time
+#include <TinyDebugKnockBang.h>     // https://github.com/Coding-Badly/TinyDebugKnockBang
 
-void setup(void)
+void setup()
 {
     Debug.begin(250000);
-    
-    //setSyncProvider() causes the Time library to synchronize with the
-    //external RTC by calling RTC.get() every five minutes by default.
+
+    // setSyncProvider() causes the Time library to synchronize with the
+    // external RTC by calling RTC.get() every five minutes by default.
     setSyncProvider(RTC.get);
     Debug.print(F("RTC Sync"));
     if (timeStatus() != timeSet) Debug.print(F(" FAIL!"));
     Debug.println();
 }
 
-void loop(void)
+void loop()
 {
     static time_t tLast;
 
@@ -50,7 +47,7 @@ void loop(void)
     }
 }
 
-//print date and time to Serial
+// print date and time to Serial
 void printDateTime(time_t t)
 {
     printDate(t);
@@ -58,7 +55,7 @@ void printDateTime(time_t t)
     printTime(t);
 }
 
-//print time to Serial
+// print time to Serial
 void printTime(time_t t)
 {
     printI00(hour(t), ':');
@@ -66,7 +63,7 @@ void printTime(time_t t)
     printI00(second(t), ' ');
 }
 
-//print date to Serial
+// print date to Serial
 void printDate(time_t t)
 {
     printI00(day(t), 0);
@@ -74,9 +71,9 @@ void printDate(time_t t)
     Debug.print(year(t), DEC);
 }
 
-//Print an integer in "00" format (with leading zero),
-//followed by a delimiter character to Serial.
-//Input value assumed to be between 0 and 99.
+// Print an integer in "00" format (with leading zero),
+// followed by a delimiter character to Serial.
+// Input value assumed to be between 0 and 99.
 void printI00(int val, char delim)
 {
     if (val < 10) Debug.print('0');

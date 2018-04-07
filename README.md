@@ -1,33 +1,24 @@
 # Arduino MCP79412 RTC Library
 https://github.com/JChristensen/MCP79412RTC  
-ReadMe file  
+README file  
 Jack Christensen  
-Sep-2012
-
-![CC BY-SA](http://mirrors.creativecommons.org/presskit/buttons/80x15/png/by-sa.png)
+Sep 2012
 
 ## Introduction
-**MCP79412RTC** is an Arduino library that supports the Microchip MCP7941x Real-Time Clock/Calendar chips.  It is intended to be used with the [Arduino Time library] (http://www.arduino.cc/playground/Code/Time).
+**MCP79412RTC** is an Arduino library that supports the Microchip MCP7941x Real-Time Clock/Calendar chips. This library is intended to be used with [PJRC's Arduino Time library](https://github.com/PaulStoffregen/Time).
 
-The **MCP79412RTC** library is a drop-in replacement for the **DS1307RTC** library by Michael Margolis that is supplied with the [Arduino Time library](http://www.arduino.cc/playground/Code/Time).  To change from using a DS1307 RTC to an MCP7941x RTC, it is only necessary to use `#include <MCP79412RTC.h>` instead of `#include <DS1307RTC.h>`.
+The **MCP79412RTC** library is a drop-in replacement for the (older) **DS1307RTC** library by Michael Margolis that is supplied with the [Arduino Time library](https://www.arduino.cc/playground/Code/Time) (but not for [PJRC's newer version of the DS1307RTC library](https://www.pjrc.com/teensy/td_libs_DS1307RTC.html)).  To change from using a DS1307 RTC to an MCP7941x RTC, it is only necessary to use `#include <MCP79412RTC.h>` instead of `#include <DS1307RTC.h>`.
 
-The **MCP79412RTC** library also implements methods to support the additional features of the MCP7941x RTC.
+The **MCP79412RTC** library also implements functions to support the additional features of the MCP7941x RTC.
 
 **For more information on the MCP79412, see:**  
 [My Blog Post](http://goo.gl/MkBnjR), summarizing the features and advantages of the MCP79412  
 [My Power Outage Logger Project](http://goo.gl/RfM5os), an Arduino-based project featuring the MCP79412  
 The [Microchip MCP79412 Product Page](http://goo.gl/SHfKe0) for specs, datasheet, etc.  
-MCP79411 and MCP79412 breakout boards are available at [my Tindie Store](http://goo.gl/UzAVcZ)  
-
-## Installation
-To use the **MCP79412RTC** library:  
-- Go to https://github.com/JChristensen/MCP79412RTC, click the **Download ZIP** button and save the ZIP file to a convenient location on your PC.
-- Uncompress the downloaded file.  This will result in a folder containing all the files for the library, that has a name that includes the branch name, usually **MCP79412RTC-master**.
-- Rename the folder to just **MCP79412RTC**.
-- Copy the renamed folder to the Arduino sketchbook\libraries folder.
 
 ## Examples
 The following example sketches are included with the **MCP79412RTC** library:
+
 - **rtcSet1:** Set the RTC date and time using a hard-coded value in the sketch.
 - **rtcSet2:** Similar to **rtcSet1**, a different way to hard-code the date and time.
 - **rtcSet3:** Set the RTC to the sketch compile date and time.
@@ -40,16 +31,9 @@ The following example sketches are included with the **MCP79412RTC** library:
 ## Usage notes
 Similar to the **DS1307RTC** library, the **MCP79412RTC** library instantiates an RTC object; the user does not need to do this.
 
-To use the **MCP79412RTC** library, the Time and Wire libraries must also be included.  For brevity, these includes are not repeated in the examples below:
-```c++
-#include <MCP79412RTC.h>	//http://github.com/JChristensen/MCP79412RTC
-#include <Time.h>           //http://www.arduino.cc/playground/Code/Time
-#include <Wire.h>           //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
-```
+## Functions for setting and reading the time
 
-## Methods for setting and reading the time
-
-### get(void)
+### get()
 ##### Description
 Reads the current date and time from the RTC and returns it as a *time_t* value. Returns zero if an I2C error occurs (RTC not present, etc.).
 ##### Syntax
@@ -84,7 +68,7 @@ RTC.set(now());                     //set the RTC from the system time
 
 ### read(tmElements_t &tm)
 ##### Description
-Reads the current date and time from the RTC and returns it as a *tmElements_t* structure. Returns *false* if an I2C error occurs (RTC not present, etc.).  See the [Arduino Time library](http://www.arduino.cc/playground/Code/Time) for details on the *tmElements_t* structure.
+Reads the current date and time from the RTC and returns it as a *tmElements_t* structure. Returns *false* if an I2C error occurs (RTC not present, etc.).  See the [Arduino Time library](https://www.arduino.cc/playground/Code/Time) for details on the *tmElements_t* structure.
 ##### Syntax
 `RTC.read(tm);`
 ##### Parameters
@@ -123,7 +107,7 @@ tm.Year = 2009 - 1970;    //tmElements_t.Year is the offset from 1970
 RTC.write(tm);            //set the RTC from the tm structure
 ```
 
-### isRunning(void)
+### isRunning()
 ##### Description
 Returns a boolean value indicating whether the RTC's oscillator is running.  When there is no backup battery present, the RTC will reset when it is next powered up, and the oscillator will not be running.  Setting the time with `RTC.set()` or `RTC.write()` starts the oscillator.
 ##### Syntax
@@ -140,8 +124,8 @@ else
 	//do something else
 ```
 
-## Methods for reading and writing static RAM (SRAM)
-The MCP79412 RTC has 64 bytes of battery-backed SRAM that can be read and written with the following methods using addresses between 0 and 63.  Addresses passed to these functions are constrained to the valid range by an AND function.
+## Functions for reading and writing static RAM (SRAM)
+The MCP79412 RTC has 64 bytes of battery-backed SRAM that can be read and written with the following functions using addresses between 0 and 63.  Addresses passed to these functions are constrained to the valid range by an AND function.
 
 ### sramWrite(byte addr, byte value)
 ##### Description
@@ -209,8 +193,8 @@ byte buf[8];
 RTC.sramRead(56, buf, 8);
 ```
 	
-## Methods for Reading and writing EEPROM
-The MCP79412 RTC has 128 bytes of non-volatile EEPROM that can be read and written with the following methods using addresses between 0 and 127.  Addresses passed to these functions are constrained to the valid range by an AND function.
+## Functions for Reading and writing EEPROM
+The MCP79412 RTC has 128 bytes of non-volatile EEPROM that can be read and written with the following functions using addresses between 0 and 127.  Addresses passed to these functions are constrained to the valid range by an AND function.
 
 EEPROM is paged memory with a page size of 8 bytes; when writing multiple bytes, this this limits the number of bytes that can be written at one time to 8.  Page writes must start on a page boundary.
 
@@ -280,7 +264,7 @@ byte buf[8];
 RTC.eepromRead(120, buf, 8);
 ```
 
-## Alarm methods
+## Alarm functions
 The MCP79412 RTC has two alarms (Alarm-0 and Alarm-1) that can be used separately or simultaneously.  When an alarm is triggered, a flag is set in the RTC that can be detected with the `alarm()` function below.  Optionally, the RTC's Multi-Function Pin (MFP) can be driven to either a low or high logic level when an alarm is triggered.  When using the MFP with both alarms, be sure to read the comments on the `alarmPolarity()` function below.
 
 ### setAlarm(byte alarmNumber, time_t alarmTime)
@@ -363,7 +347,7 @@ None.
 RTC.alarmPolarity(HIGH);    //drives MFP high when an alarm is triggered
 ```
 
-## Calibration, power failure, and other methods
+## Calibration, power failure, and other functions
 
 ### calibWrite(int value)
 ##### Description
@@ -380,11 +364,11 @@ RTC.calibWrite(13);     //makes the RTC run slower by 13 parts per million.
 RTC.calibWrite(-42);    //makes the RTC run faster by 42 parts per million.
 ```
 
-### calibRead(void)
+### calibRead()
 ##### Description
 Reads the RTC calibration register.
 ##### Syntax
-`RTC.calibRead(void);`
+`RTC.calibRead();`
 ##### Parameters
 None.
 ##### Returns
