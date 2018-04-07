@@ -1,4 +1,5 @@
 MCP79412RTC	KEYWORD1
+begin	KEYWORD2
 get	KEYWORD2
 set	KEYWORD2
 read	KEYWORD2
@@ -10,6 +11,7 @@ eepromRead	KEYWORD2
 calibRead	KEYWORD2
 calibWrite	KEYWORD2
 idRead	KEYWORD2
+getEUI64	KEYWORD2
 powerFail	KEYWORD2
 squareWave	KEYWORD2
 setAlarm	KEYWORD2
@@ -18,3 +20,4 @@ alarm	KEYWORD2
 out	KEYWORD2
 alarmPolarity	KEYWORD2
 isRunning	KEYWORD2
+vbaten	KEYWORD2
