@@ -20,7 +20,8 @@
 #ifndef MCP79412RTC_H_INCLUDED
 #define MCP79412RTC_H_INCLUDED
 
-#include <TimeLib.h>
+#include <Arduino.h>
+#include <TimeLib.h>    // https://github.com/PaulStoffregen/Time
 
 // Alarm types for use with the enableAlarm() function
 enum {
