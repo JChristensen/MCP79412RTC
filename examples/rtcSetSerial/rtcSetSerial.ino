@@ -10,7 +10,7 @@
 #include <MCP79412RTC.h>    // https://github.com/JChristensen/MCP79412RTC
 #include <TimeLib.h>        // https://github.com/PaulStoffregen/Time
 
-const uint32_t PRINT_INTERVAL(1000);     // ms between printing the time
+const uint32_t PRINT_INTERVAL(10000);   // ms between printing the time
 uint32_t ms, msLast;
 
 void setup()
@@ -40,24 +40,25 @@ void loop()
 void readCommand()
 {
     char cmd[24] = "Set yyyy-mm-dd hh:mm:ss";
-    static int i;
-    tmElements_t tmSet;
-    time_t tSet;
 
-    if (Serial.available() >= 23) {              // enough characters for the whole command?
-        i = 0;                                   // yes, read the available characters
+    // serial terminal will send 23 char command plus line terminator (0x0A)
+    if (Serial.available() >= 24) {             // enough characters for the whole command?
+        unsigned int i = 0;                     // yes, read the available characters
         while (Serial.available() > 0) {
-            if (i >= sizeof(cmd) - 1) {          // more than we can enjoy
-                flushInput();                    // clear out the input buffer
+            if (i >= sizeof(cmd)) {             // more than we can enjoy
+                flushInput();                   // clear out the input buffer
+                cmd[sizeof(cmd) - 1] = 0;       // string terminator
                 Serial.print("Too long: ");
                 Serial.println(cmd);
                 return;
             }
-            delay(2);                            //let the next character trickle in
-            cmd[i++] = char(Serial.read());
+            delay(2);                           // let the next character trickle in
+            char c = Serial.read();
+            if (c >= ' ') cmd[i++] = c;         // printable characters and spaces only
         }
-        cmd[i] = 0;                              //put in string terminator
+        cmd[i] = 0;                             // put in string terminator
 
+        tmElements_t tmSet;
         if (strncmp(cmd, "Set ", 4) == 0) {
             tmSet.Year = 1000 * (cmd[4] - '0') + 100 * (cmd[5] - '0') + 10 * (cmd[6] - '0') + cmd[7] - '0' - 1970;
             tmSet.Month = 10 * (cmd[9] - '0') + cmd[10] - '0';
@@ -65,11 +66,12 @@ void readCommand()
             tmSet.Hour = 10 * (cmd[15] - '0') + cmd[16] - '0';
             tmSet.Minute = 10 * (cmd[18] - '0') + cmd[19] - '0';
             tmSet.Second = 10 * (cmd[21] - '0') + cmd[22] - '0';
-            tSet = makeTime(tmSet);      // convert to time_t
-            setTime(tSet);               // set the system time
-            RTC.set(now());              // set the rtc
+            time_t tSet = makeTime(tmSet);  // convert to time_t
+            setTime(tSet);                  // set the system time
+            RTC.set(now());                 // set the rtc
             Serial.println("RTC set!");
-            flushInput();                // discard any extraneous trailing characters
+            printTime(RTC.get());
+            flushInput();                   // discard any extraneous trailing characters
         }
         else {
             Serial.print("Unknown: ");
