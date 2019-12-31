@@ -30,9 +30,8 @@ void loop()
 time_t compileTime()
 {
     const uint32_t FUDGE(15);        // fudge factor to allow for compile time (seconds, YMMV)
-    char *compDate = __DATE__, *compTime = __TIME__, *months = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    const char *compDate = __DATE__, *compTime = __TIME__, *months = "JanFebMarAprMayJunJulAugSepOctNovDec";
     char chMon[3], *m;
-    int d, y;
     tmElements_t tm;
     time_t t;
 

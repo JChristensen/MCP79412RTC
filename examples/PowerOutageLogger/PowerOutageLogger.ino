@@ -167,7 +167,7 @@ time_t read32(uint8_t addr)
 }
 
 // Print time with time zone
-void printTime(time_t t, char *tz)
+void printTime(time_t t, const char *tz)
 {
     sPrintI00(hour(t));
     sPrintDigits(minute(t));
