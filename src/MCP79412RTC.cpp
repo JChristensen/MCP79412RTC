@@ -19,84 +19,6 @@
 
 #include <MCP79412RTC.h>
 
-// define consistent I2C functions
-#if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
-#include <TinyWireM.h>
-#define i2cBegin TinyWireM.begin
-#define i2cBeginTransmission TinyWireM.beginTransmission
-#define i2cEndTransmission TinyWireM.endTransmission
-#define i2cRequestFrom TinyWireM.requestFrom
-#define i2cRead TinyWireM.receive
-#define i2cWrite TinyWireM.send
-#else
-#include <Wire.h>
-#define i2cBegin Wire.begin
-#define i2cBeginTransmission Wire.beginTransmission
-#define i2cEndTransmission Wire.endTransmission
-#define i2cRequestFrom Wire.requestFrom
-#define i2cRead Wire.read
-#define i2cWrite Wire.write
-#endif
-
-// MCP7941x I2C Addresses
-#define RTC_ADDR 0x6F
-#define EEPROM_ADDR 0x57
-
-// MCP7941x Register Addresses
-#define TIME_REG 0x00        // 7 registers, Seconds, Minutes, Hours, DOW, Date, Month, Year
-#define DAY_REG 0x03         // the RTC Day register contains the OSCON, VBAT, and VBATEN bits
-#define YEAR_REG 0x06        // RTC year register
-#define CTRL_REG 0x07        // control register
-#define CALIB_REG 0x08       // calibration register
-#define UNLOCK_ID_REG 0x09   // unlock ID register
-#define ALM0_REG 0x0A        // alarm 0, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
-#define ALM1_REG 0x11        // alarm 1, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
-#define ALM0_DAY 0x0D        // DOW register has alarm config/flag bits
-#define PWRDWN_TS_REG 0x18   // power-down timestamp, 4 registers, Minutes, Hours, Date, Month
-#define PWRUP_TS_REG 0x1C    // power-up timestamp, 4 registers, Minutes, Hours, Date, Month
-#define TIMESTAMP_SIZE 8     // number of bytes in the two timestamp registers
-#define SRAM_START_ADDR 0x20 // first SRAM address
-#define SRAM_SIZE 64         // number of bytes of SRAM
-#define EEPROM_SIZE 128      // number of bytes of EEPROM
-#define EEPROM_PAGE_SIZE 8   // number of bytes on an EEPROM page
-#define UNIQUE_ID_ADDR 0xF0  // starting address for unique ID
-#define UNIQUE_ID_SIZE 8     // number of bytes in unique ID
-
-// Control Register bits
-#define OUT 7       // sets logic level on MFP when not used as square wave output
-#define SQWE 6      // set to enable square wave output
-#define ALM1 5      // alarm 1 is active
-#define ALM0 4      // alarm 0 is active
-#define EXTOSC 3    // set to drive the RTC registers from an external oscillator instead of a crystal
-#define RS2 2       // RS2:0 set square wave output frequency: 0==1Hz, 1==4096Hz, 2==8192Hz, 3=32768Hz
-#define RS1 1
-#define RS0 0
-
-// Other Control Bits
-#define ST 7        // Seconds register (TIME_REG) oscillator start/stop bit, 1==Start, 0==Stop
-#define HR1224 6    // Hours register (TIME_REG+2) 12 or 24 hour mode (24 hour mode==0)
-#define AMPM 5      // Hours register (TIME_REG+2) AM/PM bit for 12 hour mode
-#define OSCON 5     // Day register (TIME_REG+3) oscillator running (set and cleared by hardware)
-#define VBAT 4      // Day register (TIME_REG+3) set by hardware when Vcc fails and RTC runs on battery.
-                    // VBAT is cleared by software, clearing VBAT also clears the timestamp registers
-#define VBATEN 3    // Day register (TIME_REG+3) VBATEN==1 enables backup battery, VBATEN==0 disconnects the VBAT pin (e.g. to save battery)
-#define LP 5        // Month register (TIME_REG+5) leap year bit
-
-// Alarm Control Bits
-#define ALMPOL 7    // Alarm Polarity: Defines the logic level for the MFP when an alarm is triggered.
-#define ALMC2 6     // Alarm configuration bits determine how alarms match. See ALM_MATCH defines below.
-#define ALMC1 5
-#define ALMC0 4
-#define ALMIF 3     // Alarm Interrupt Flag: Set by hardware when an alarm was triggered, cleared by software.
-
-// Constructor. Initializes the I2C bus by default, but better
-// practice is to pass false in the constructor and call
-// the begin() function in the setup code.
-MCP79412RTC::MCP79412RTC(bool initI2C)
-{
-    if (initI2C) i2cBegin();
-}
-
 // Initialize the I2C bus.
 void MCP79412RTC::begin()
 {
@@ -129,13 +51,13 @@ void MCP79412RTC::set(time_t t)
 bool MCP79412RTC::read(tmElements_t &tm)
 {
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite((uint8_t)TIME_REG);
+    i2cWrite(TIME_REG);
     if (i2cEndTransmission() != 0) {
         return false;
     }
     else {
         // request 7 bytes (secs, min, hr, dow, date, mth, yr)
-        i2cRequestFrom(RTC_ADDR, tmNbrFields);
+        i2cRequestFrom(RTC_ADDR, static_cast<uint8_t>(tmNbrFields));
         tm.Second = bcd2dec(i2cRead() & ~_BV(ST));
         tm.Minute = bcd2dec(i2cRead());
         tm.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    // assumes 24hr clock
@@ -151,25 +73,25 @@ bool MCP79412RTC::read(tmElements_t &tm)
 void MCP79412RTC::write(tmElements_t &tm)
 {
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite((uint8_t)TIME_REG);
-    i2cWrite((uint8_t)0x00);                     // stops the oscillator (Bit 7, ST == 0)
+    i2cWrite(TIME_REG);
+    i2cWrite(0x00);                             // stops the oscillator (Bit 7, ST == 0)
     i2cWrite(dec2bcd(tm.Minute));
-    i2cWrite(dec2bcd(tm.Hour));                  // sets 24 hour format (Bit 6 == 0)
-    i2cWrite(tm.Wday | _BV(VBATEN));             // enable battery backup operation
+    i2cWrite(dec2bcd(tm.Hour));                 // sets 24 hour format (Bit 6 == 0)
+    i2cWrite(tm.Wday | _BV(VBATEN));            // enable battery backup operation
     i2cWrite(dec2bcd(tm.Day));
     i2cWrite(dec2bcd(tm.Month));
     i2cWrite(dec2bcd(tmYearToY2k(tm.Year)));
     i2cEndTransmission();
 
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite((uint8_t)TIME_REG);
-    i2cWrite(dec2bcd(tm.Second) | _BV(ST));    // set the seconds and start the oscillator (Bit 7, ST == 1)
+    i2cWrite(TIME_REG);
+    i2cWrite(dec2bcd(tm.Second) | _BV(ST));     // set the seconds and start the oscillator (Bit 7, ST == 1)
     i2cEndTransmission();
 }
 
 // Write a single byte to RTC RAM.
 // Valid address range is 0x00 - 0x5F, no checking.
-void MCP79412RTC::ramWrite(byte addr, byte value)
+void MCP79412RTC::ramWrite(uint8_t addr, uint8_t value)
 {
     ramWrite(addr, &value, 1);
 }
@@ -178,19 +100,19 @@ void MCP79412RTC::ramWrite(byte addr, byte value)
 // Valid address range is 0x00 - 0x5F, no checking.
 // Number of bytes (nBytes) must be between 1 and 31 (Wire library
 // limitation).
-void MCP79412RTC::ramWrite(byte addr, byte *values, byte nBytes)
+void MCP79412RTC::ramWrite(uint8_t addr, uint8_t* values, uint8_t nBytes)
 {
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
-    for (byte i=0; i<nBytes; i++) i2cWrite(values[i]);
+    for (uint8_t i=0; i<nBytes; i++) i2cWrite(values[i]);
     i2cEndTransmission();
 }
 
 // Read a single byte from RTC RAM.
 // Valid address range is 0x00 - 0x5F, no checking.
-byte MCP79412RTC::ramRead(byte addr)
+uint8_t MCP79412RTC::ramRead(uint8_t addr)
 {
-    byte value;
+    uint8_t value;
 
     ramRead(addr, &value, 1);
     return value;
@@ -200,18 +122,18 @@ byte MCP79412RTC::ramRead(byte addr)
 // Valid address range is 0x00 - 0x5F, no checking.
 // Number of bytes (nBytes) must be between 1 and 32 (Wire library
 // limitation).
-void MCP79412RTC::ramRead(byte addr, byte *values, byte nBytes)
+void MCP79412RTC::ramRead(uint8_t addr, uint8_t* values, uint8_t nBytes)
 {
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
     i2cEndTransmission();
-    i2cRequestFrom( (uint8_t)RTC_ADDR, nBytes );
-    for (byte i=0; i<nBytes; i++) values[i] = i2cRead();
+    i2cRequestFrom(RTC_ADDR, nBytes);
+    for (uint8_t i=0; i<nBytes; i++) values[i] = i2cRead();
 }
 
 // Write a single byte to Static RAM.
 // Address (addr) is constrained to the range (0, 63).
-void MCP79412RTC::sramWrite(byte addr, byte value)
+void MCP79412RTC::sramWrite(uint8_t addr, uint8_t value)
 {
     ramWrite( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, &value, 1 );
 }
@@ -223,7 +145,7 @@ void MCP79412RTC::sramWrite(byte addr, byte value)
 // Invalid values for nBytes, or combinations of addr and nBytes
 // that would result in addressing past the last byte of SRAM will
 // result in no action.
-void MCP79412RTC::sramWrite(byte addr, byte *values, byte nBytes)
+void MCP79412RTC::sramWrite(uint8_t addr, uint8_t* values, uint8_t nBytes)
 {
 #if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
     if (nBytes >= 1 && (addr + nBytes) <= SRAM_SIZE) {
@@ -236,9 +158,9 @@ void MCP79412RTC::sramWrite(byte addr, byte *values, byte nBytes)
 
 // Read a single byte from Static RAM.
 // Address (addr) is constrained to the range (0, 63).
-byte MCP79412RTC::sramRead(byte addr)
+uint8_t MCP79412RTC::sramRead(uint8_t addr)
 {
-    byte value;
+    uint8_t value;
 
     ramRead( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, &value, 1 );
     return value;
@@ -251,7 +173,7 @@ byte MCP79412RTC::sramRead(byte addr)
 // Invalid values for nBytes, or combinations of addr and
 // nBytes that would result in addressing past the last byte of SRAM
 // result in no action.
-void MCP79412RTC::sramRead(byte addr, byte *values, byte nBytes)
+void MCP79412RTC::sramRead(uint8_t addr, uint8_t* values, uint8_t nBytes)
 {
 #if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
     if (nBytes >= 1 && (addr + nBytes) <= SRAM_SIZE) {
@@ -266,7 +188,7 @@ void MCP79412RTC::sramRead(byte addr, byte *values, byte nBytes)
 // Address (addr) is constrained to the range (0, 127).
 // Can't leverage page write function because a write can't start
 // mid-page.
-void MCP79412RTC::eepromWrite(byte addr, byte value)
+void MCP79412RTC::eepromWrite(uint8_t addr, uint8_t value)
 {
     i2cBeginTransmission(EEPROM_ADDR);
     i2cWrite( addr & (EEPROM_SIZE - 1) );
@@ -280,12 +202,12 @@ void MCP79412RTC::eepromWrite(byte addr, byte value)
 // is ruthlessly coerced into a valid value.
 // Number of bytes (nBytes) must be between 1 and 8, other values
 // result in no action.
-void MCP79412RTC::eepromWrite(byte addr, byte *values, byte nBytes)
+void MCP79412RTC::eepromWrite(uint8_t addr, uint8_t* values, uint8_t nBytes)
 {
     if (nBytes >= 1 && nBytes <= EEPROM_PAGE_SIZE) {
         i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite( addr & ~(EEPROM_PAGE_SIZE - 1) & (EEPROM_SIZE - 1) );
-        for (byte i=0; i<nBytes; i++) i2cWrite(values[i]);
+        for (uint8_t i=0; i<nBytes; i++) i2cWrite(values[i]);
         i2cEndTransmission();
         eepromWait();
     }
@@ -293,9 +215,9 @@ void MCP79412RTC::eepromWrite(byte addr, byte *values, byte nBytes)
 
 // Read a single byte from EEPROM.
 // Address (addr) is constrained to the range (0, 127).
-byte MCP79412RTC::eepromRead(byte addr)
+uint8_t MCP79412RTC::eepromRead(uint8_t addr)
 {
-    byte value;
+    uint8_t value;
 
     eepromRead( addr & (EEPROM_SIZE - 1), &value, 1 );
     return value;
@@ -308,7 +230,7 @@ byte MCP79412RTC::eepromRead(byte addr)
 // Invalid values for addr or nBytes, or combinations of addr and
 // nBytes that would result in addressing past the last byte of EEPROM
 // result in no action.
-void MCP79412RTC::eepromRead(byte addr, byte *values, byte nBytes)
+void MCP79412RTC::eepromRead(uint8_t addr, uint8_t* values, uint8_t nBytes)
 {
 #if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
     if (nBytes >= 1 && (addr + nBytes) <= EEPROM_SIZE) {
@@ -318,22 +240,22 @@ void MCP79412RTC::eepromRead(byte addr, byte *values, byte nBytes)
         i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite( addr & (EEPROM_SIZE - 1) );
         i2cEndTransmission();
-        i2cRequestFrom( (uint8_t)EEPROM_ADDR, nBytes );
-        for (byte i=0; i<nBytes; i++) values[i] = i2cRead();
+        i2cRequestFrom(EEPROM_ADDR, nBytes);
+        for (uint8_t i=0; i<nBytes; i++) values[i] = i2cRead();
     }
 }
 
 // Wait for EEPROM write to complete.
-byte MCP79412RTC::eepromWait()
+uint8_t MCP79412RTC::eepromWait()
 {
-    byte waitCount = 0;
-    byte txStatus;
+    uint8_t waitCount{0};
+    uint8_t txStatus;
 
     do
     {
         ++waitCount;
         i2cBeginTransmission(EEPROM_ADDR);
-        i2cWrite((uint8_t)0);
+        i2cWrite(0);
         txStatus = i2cEndTransmission();
 
     } while (txStatus != 0);
@@ -345,9 +267,9 @@ byte MCP79412RTC::eepromWait()
 // The calibration value is not a twos-complement number. The MSB is
 // the sign bit, and the 7 LSBs are an unsigned number, so we convert
 // it and return it to the caller as a regular twos-complement integer.
-int MCP79412RTC::calibRead()
+int16_t MCP79412RTC::calibRead()
 {
-    byte val = ramRead(CALIB_REG);
+    uint8_t val {ramRead(CALIB_REG)};
 
     if ( val & 0x80 ) return -(val & 0x7F);
     else return val;
@@ -356,12 +278,10 @@ int MCP79412RTC::calibRead()
 // Write the calibration register.
 // Calibration value must be between -127 and 127, others result
 // in no action. See note above on the format of the calibration value.
-void MCP79412RTC::calibWrite(int value)
+void MCP79412RTC::calibWrite(int16_t value)
 {
-    byte calibVal;
-
     if (value >= -127 && value <= 127) {
-        calibVal = abs(value);
+        uint8_t calibVal = abs(value);
         if (value < 0) calibVal += 128;
         ramWrite(CALIB_REG, calibVal);
     }
@@ -370,13 +290,13 @@ void MCP79412RTC::calibWrite(int value)
 // Read the unique ID.
 // For the MCP79411 (EUI-48), the first two bytes will contain 0xFF.
 // Caller must provide an 8-byte array to contain the results.
-void MCP79412RTC::idRead(byte *uniqueID)
+void MCP79412RTC::idRead(uint8_t* uniqueID)
 {
     i2cBeginTransmission(EEPROM_ADDR);
     i2cWrite(UNIQUE_ID_ADDR);
     i2cEndTransmission();
     i2cRequestFrom( EEPROM_ADDR, UNIQUE_ID_SIZE );
-    for (byte i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = i2cRead();
+    for (uint8_t i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = i2cRead();
 }
 
 // Returns an EUI-64 ID. For an MCP79411, the EUI-48 ID is converted to
@@ -384,9 +304,9 @@ void MCP79412RTC::idRead(byte *uniqueID)
 // calling idRead(). For an MCP79412, if the RTC type is known, calling
 // idRead() will be a bit more efficient.
 // Caller must provide an 8-byte array to contain the results.
-void MCP79412RTC::getEUI64(byte *uniqueID)
+void MCP79412RTC::getEUI64(uint8_t* uniqueID)
 {
-    byte rtcID[8];
+    uint8_t rtcID[8];
 
     idRead(rtcID);
     if (rtcID[0] == 0xFF && rtcID[1] == 0xFF) {
@@ -396,7 +316,7 @@ void MCP79412RTC::getEUI64(byte *uniqueID)
         rtcID[3] = 0xFF;
         rtcID[4] = 0xFE;
     }
-    for (byte i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = rtcID[i];
+    for (uint8_t i=0; i<UNIQUE_ID_SIZE; i++) uniqueID[i] = rtcID[i];
 }
 
 // Check to see if a power failure has occurred. If so, returns TRUE
@@ -418,11 +338,9 @@ void MCP79412RTC::getEUI64(byte *uniqueID)
 //
 // Finally, note that once the RTC records a power outage, it must be
 // cleared before another will be recorded.
-bool MCP79412RTC::powerFail(time_t *powerDown, time_t *powerUp)
+bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
 {
-    byte day, yr;                   // copies of the RTC Day and Year registers
-    tmElements_t dn, up;            // power down and power up times
-
+    uint8_t day, yr;                // copies of the RTC Day and Year registers
     ramRead(DAY_REG, &day, 1);
     ramRead(YEAR_REG, &yr, 1);
     yr = y2kYearToTm(bcd2dec(yr));
@@ -431,7 +349,8 @@ bool MCP79412RTC::powerFail(time_t *powerDown, time_t *powerUp)
         i2cWrite(PWRDWN_TS_REG);
         i2cEndTransmission();
 
-        i2cRequestFrom(RTC_ADDR, TIMESTAMP_SIZE);     // read both timestamp registers, 8 bytes total
+        i2cRequestFrom(RTC_ADDR, TIMESTAMP_SIZE);       // read both timestamp registers, 8 bytes total
+        tmElements_t dn, up;                            // power down and power up times
         dn.Second = 0;
         dn.Minute = bcd2dec(i2cRead());
         dn.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    // assumes 24hr clock
@@ -474,7 +393,6 @@ bool MCP79412RTC::powerFail(time_t *powerDown, time_t *powerUp)
 void MCP79412RTC::squareWave(uint8_t freq)
 {
     uint8_t ctrlReg;
-
     ramRead(CTRL_REG, &ctrlReg, 1);
     if (freq > 3) {
         ctrlReg &= ~_BV(SQWE);
@@ -487,13 +405,11 @@ void MCP79412RTC::squareWave(uint8_t freq)
 
 // Set an alarm time. Sets the alarm registers only, does not enable
 // the alarm. See enableAlarm().
-void MCP79412RTC::setAlarm(uint8_t alarmNumber, time_t alarmTime)
+void MCP79412RTC::setAlarm(ALARM_NBR_t alarmNumber, time_t alarmTime)
 {
-    tmElements_t tm;
-    uint8_t day;        // need to preserve bits in the day (of week) register
-
-    alarmNumber &= 0x01;        // ensure a valid alarm number
+    uint8_t day;                // need to preserve bits in the day (of week) register
     ramRead( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG) , &day, 1);
+    tmElements_t tm;
     breakTime(alarmTime, tm);
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite( ALM0_REG + alarmNumber * (ALM1_REG - ALM0_REG) );
@@ -508,14 +424,12 @@ void MCP79412RTC::setAlarm(uint8_t alarmNumber, time_t alarmTime)
 
 // Enable or disable an alarm, and set the trigger criteria,
 // e.g. match only seconds, only minutes, entire time and date, etc.
-void MCP79412RTC::enableAlarm(uint8_t alarmNumber, uint8_t alarmType)
+void MCP79412RTC::enableAlarm(ALARM_NBR_t alarmNumber, uint8_t alarmType)
 {
-    uint8_t day;                // alarm day register has config & flag bits
     uint8_t ctrl;               // control register has alarm enable bits
-
-    alarmNumber &= 0x01;        // ensure a valid alarm number
     ramRead(CTRL_REG, &ctrl, 1);
     if (alarmType < ALM_DISABLE) {
+        uint8_t day;                            // alarm day register has config & flag bits
         ramRead(ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
         day = ( day & 0x87 ) | alarmType << 4;  // reset interrupt flag, OR in the config bits
         ramWrite(ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
@@ -530,11 +444,9 @@ void MCP79412RTC::enableAlarm(uint8_t alarmNumber, uint8_t alarmType)
 // Returns true or false depending on whether the given alarm has been
 // triggered, and resets the alarm "interrupt" flag. This is not a real
 // interrupt, just a bit that's set when an alarm is triggered.
-bool MCP79412RTC::alarm(uint8_t alarmNumber)
+bool MCP79412RTC::alarm(ALARM_NBR_t alarmNumber)
 {
     uint8_t day;                // alarm day register has config & flag bits
-
-    alarmNumber &= 0x01;        // ensure a valid alarm number
     ramRead( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
     if (day & _BV(ALMIF)) {
         day &= ~_BV(ALMIF);     // turn off the alarm "interrupt" flag
@@ -550,7 +462,6 @@ bool MCP79412RTC::alarm(uint8_t alarmNumber)
 void MCP79412RTC::out(bool level)
 {
     uint8_t ctrlReg;
-
     ramRead(CTRL_REG, &ctrlReg, 1);
     if (level)
         ctrlReg |= _BV(OUT);
@@ -572,7 +483,6 @@ void MCP79412RTC::out(bool level)
 void MCP79412RTC::alarmPolarity(bool polarity)
 {
     uint8_t alm0Day;
-
     ramRead(ALM0_DAY, &alm0Day, 1);
     if (polarity)
         alm0Day |= _BV(OUT);
@@ -586,11 +496,11 @@ void MCP79412RTC::alarmPolarity(bool polarity)
 bool MCP79412RTC::isRunning()
 {
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite((uint8_t)TIME_REG);
+    i2cWrite(TIME_REG);
     i2cEndTransmission();
 
     // request just the seconds register
-    i2cRequestFrom(RTC_ADDR, 1);
+    i2cRequestFrom(RTC_ADDR, static_cast<uint8_t>(1));
     return i2cRead() & _BV(ST);
 }
 
@@ -600,7 +510,6 @@ bool MCP79412RTC::isRunning()
 void MCP79412RTC::vbaten(bool enable)
 {
     uint8_t day;
-
     ramRead(DAY_REG, &day, 1);
     if (enable)
         day |= _BV(VBATEN);
@@ -623,6 +532,116 @@ uint8_t __attribute__ ((noinline)) MCP79412RTC::bcd2dec(uint8_t n)
     return n - 6 * (n >> 4);
 }
 
-#if defined ARDUINO_ARCH_AVR
-MCP79412RTC RTC;      // instantiate an RTC object for AVR only
-#endif
+// dump rtc registers, 16 bytes at a time.
+// always dumps a multiple of 16 bytes.
+// duplicate rows are suppressed and indicated with an asterisk.
+void MCP79412RTC::dumpRegs(uint32_t startAddr, uint32_t nBytes)
+{
+    Serial.print(F("\nRTC REGISTERS\n"));
+    uint32_t nRows = (nBytes + 15) >> 4;
+
+    uint8_t d[16], last[16];
+    uint32_t aLast {startAddr};
+    for (uint32_t r = 0; r < nRows; r++) {
+        uint32_t a = startAddr + 16 * r;
+        ramRead(a, d, 16);
+        bool same {true};
+        for (int i=0; i<16; ++i) {
+            if (last[i] != d[i]) same = false;
+        }
+        if (!same || r == 0 || r == nRows-1) {
+            Serial.print(F("0x"));
+            if ( a < 16 * 16 * 16 ) Serial.print('0');
+            if ( a < 16 * 16 ) Serial.print('0');
+            if ( a < 16 ) Serial.print('0');
+            Serial.print(a, HEX);
+            Serial.print(a == aLast+16 || r == 0 ? "  " : "* ");
+            for ( int16_t c = 0; c < 16; c++ ) {
+                if ( d[c] < 16 ) Serial.print('0');
+                Serial.print(d[c], HEX);
+                Serial.print(c == 7 ? "  " : " " );
+            }
+            Serial.println();
+            aLast = a;
+        }
+        for (int i=0; i<16; ++i) {
+            last[i] = d[i];
+        }
+    }
+}
+
+// dump rtc sram, 16 bytes at a time.
+// always dumps a multiple of 16 bytes.
+// duplicate rows are suppressed and indicated with an asterisk.
+void MCP79412RTC::dumpSRAM(uint32_t startAddr, uint32_t nBytes)
+{
+    Serial.print(F("\nRTC SRAM\n"));
+    uint32_t nRows = (nBytes + 15) >> 4;
+
+    uint8_t d[16], last[16];
+    uint32_t aLast {startAddr};
+    for (uint32_t r = 0; r < nRows; r++) {
+        uint32_t a = startAddr + 16 * r;
+        sramRead(a, d, 16);
+        bool same {true};
+        for (int i=0; i<16; ++i) {
+            if (last[i] != d[i]) same = false;
+        }
+        if (!same || r == 0 || r == nRows-1) {
+            Serial.print(F("0x"));
+            if ( a < 16 * 16 * 16 ) Serial.print('0');
+            if ( a < 16 * 16 ) Serial.print('0');
+            if ( a < 16 ) Serial.print('0');
+            Serial.print(a, HEX);
+            Serial.print(a == aLast+16 || r == 0 ? "  " : "* ");
+            for ( int16_t c = 0; c < 16; c++ ) {
+                if ( d[c] < 16 ) Serial.print('0');
+                Serial.print(d[c], HEX);
+                Serial.print(c == 7 ? "  " : " " );
+            }
+            Serial.println();
+            aLast = a;
+        }
+        for (int i=0; i<16; ++i) {
+            last[i] = d[i];
+        }
+    }
+}
+
+// dump rtc eeprom, 16 bytes at a time.
+// always dumps a multiple of 16 bytes.
+// duplicate rows are suppressed and indicated with an asterisk.
+void MCP79412RTC::dumpEEPROM(uint32_t startAddr, uint32_t nBytes)
+{
+    Serial.print(F("\nRTC EEPROM\n"));
+    uint32_t nRows = (nBytes + 15) >> 4;
+
+    uint8_t d[16], last[16];
+    uint32_t aLast {startAddr};
+    for (uint32_t r = 0; r < nRows; r++) {
+        uint32_t a = startAddr + 16 * r;
+        eepromRead(a, d, 16);
+        bool same {true};
+        for (int i=0; i<16; ++i) {
+            if (last[i] != d[i]) same = false;
+        }
+        if (!same || r == 0 || r == nRows-1) {
+            Serial.print(F("0x"));
+            if ( a < 16 * 16 * 16 ) Serial.print('0');
+            if ( a < 16 * 16 ) Serial.print('0');
+            if ( a < 16 ) Serial.print('0');
+            Serial.print(a, HEX);
+            Serial.print(a == aLast+16 || r == 0 ? "  " : "* ");
+            for ( int16_t c = 0; c < 16; c++ ) {
+                if ( d[c] < 16 ) Serial.print('0');
+                Serial.print(d[c], HEX);
+                Serial.print(c == 7 ? "  " : " " );
+            }
+            Serial.println();
+            aLast = a;
+        }
+        for (int i=0; i<16; ++i) {
+            last[i] = d[i];
+        }
+    }
+}

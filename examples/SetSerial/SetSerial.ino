@@ -34,20 +34,24 @@
 #include <Streaming.h>      // http://arduiniana.org/libraries/streaming/
 #include <TimeLib.h>        // https://github.com/PaulStoffregen/Time
 
+MCP79412RTC myRTC;
+
 void setup()
 {
-    byte rtcID[8];
-
     Serial.begin(115200);
+    Serial << F( "\n" __FILE__ "\n" __DATE__ " " __TIME__ "\n" );
+    myRTC.begin();
+    myRTC.dumpRegs();
 
     // setSyncProvider() causes the Time library to synchronize with the
-    // external RTC by calling RTC.get() every five minutes by default.
-    setSyncProvider(RTC.get);
+    // external RTC by calling myRTC.get() every five minutes by default.
+    setSyncProvider(myRTC.get);
     Serial << endl << F("RTC Sync");
     if (timeStatus() != timeSet) Serial << F(" FAIL!");
     Serial << endl;
 
-    RTC.idRead(rtcID);
+    uint8_t rtcID[8];
+    myRTC.idRead(rtcID);
     Serial << F("RTC ID = ");
     for (int i=0; i<8; ++i) {
         if (rtcID[i] < 16) Serial << '0';
@@ -55,7 +59,7 @@ void setup()
     }
     Serial << endl;
 
-    RTC.getEUI64(rtcID);
+    myRTC.getEUI64(rtcID);
     Serial << F("EUI-64 = ");
     for (int i=0; i<8; ++i) {
         if (rtcID[i] < 16) Serial << '0';
@@ -63,13 +67,11 @@ void setup()
     }
     Serial << endl;
 
-    Serial << F("Calibration Register = ") << RTC.calibRead() << endl;
+    Serial << F("Calibration Register = ") << myRTC.calibRead() << endl;
 }
 
 void loop()
 {
-    static time_t tLast;
-    time_t t;
     tmElements_t tm;
     int cmdChar, y, oldCal, newCal;
 
@@ -96,11 +98,11 @@ void loop()
                     tm.Hour = Serial.parseInt();
                     tm.Minute = Serial.parseInt();
                     tm.Second = Serial.parseInt();
-                    t = makeTime(tm);
-                    RTC.set(t);        // use the time_t value to ensure correct weekday is set
+                    time_t t = makeTime(tm);
+                    myRTC.set(t);        // use the time_t value to ensure correct weekday is set
                     setTime(t);
                     Serial << F("RTC set to: ");
-                    printDateTime(t);
+                    printTime(t);
                     Serial << endl;
                 }
                 break;
@@ -108,9 +110,9 @@ void loop()
             case 'C':
             case 'c':
                 newCal = Serial.parseInt();
-                oldCal = RTC.calibRead();
-                RTC.calibWrite(newCal);
-                Serial << F("Calibration changed from ") << oldCal << F(" to ") << RTC.calibRead() << endl;
+                oldCal = myRTC.calibRead();
+                myRTC.calibWrite(newCal);
+                Serial << F("Calibration changed from ") << oldCal << F(" to ") << myRTC.calibRead() << endl;
                 break;
 
             default:
@@ -122,44 +124,22 @@ void loop()
         while (Serial.available() > 0) Serial.read();
     }
 
-    t = now();
+    // print time and date every second
+    static time_t tLast;
+    time_t t { now() };
     if (t != tLast) {
         tLast = t;
-        printDateTime(t);
-        Serial << endl;
+        printTime(t);
     }
 }
 
-// print date and time to Serial
-void printDateTime(time_t t)
-{
-    printDate(t);
-    Serial << ' ';
-    printTime(t);
-}
-
-// print time to Serial
+// format and print a time_t value
 void printTime(time_t t)
 {
-    printI00(hour(t), ':');
-    printI00(minute(t), ':');
-    printI00(second(t), ' ');
-}
-
-// print date to Serial
-void printDate(time_t t)
-{
-    printI00(day(t), 0);
-    Serial << monthShortStr(month(t)) << _DEC(year(t));
-}
-
-// Print an integer in "00" format (with leading zero),
-// followed by a delimiter character to Serial.
-// Input value assumed to be between 0 and 99.
-void printI00(int val, char delim)
-{
-    if (val < 10) Serial << '0';
-    Serial << _DEC(val);
-    if (delim > 0) Serial << delim;
-    return;
+    char buf[25];
+    char m[4];    // temporary storage for month string (DateStrings.cpp uses shared buffer)
+    strcpy(m, monthShortStr(month(t)));
+    sprintf(buf, "%.2d:%.2d:%.2d %s %.2d %s %d",
+        hour(t), minute(t), second(t), dayShortStr(weekday(t)), day(t), m, year(t));
+    Serial.println(buf);
 }
