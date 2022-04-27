@@ -88,54 +88,56 @@ class MCP79412RTC
 
         // MCP7941x Register Addresses
         static constexpr uint8_t
-            TIME_REG        {0x00}, // 7 registers, Seconds, Minutes, Hours, DOW, Date, Month, Year
-            DAY_REG         {0x03}, // the RTC Day register contains the OSCON, VBAT, and VBATEN bits
-            YEAR_REG        {0x06}, // RTC year register
-            CTRL_REG        {0x07}, // control register
-            CALIB_REG       {0x08}, // calibration register
-            UNLOCK_ID_REG   {0x09}, // unlock ID register
-            ALM0_REG        {0x0A}, // alarm 0, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
-            ALM1_REG        {0x11}, // alarm 1, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
-            ALM0_DAY        {0x0D}, // DOW register has alarm config/flag bits
-            PWRDWN_TS_REG   {0x18}, // power-down timestamp, 4 registers, Minutes, Hours, Date, Month
-            PWRUP_TS_REG    {0x1C}, // power-up timestamp, 4 registers, Minutes, Hours, Date, Month
+            RTCSEC          {0x00}, // 7 registers, Seconds, Minutes, Hours, DOW, Date, Month, Year
+            RTCWKDAY        {0x03}, // the RTC Day register contains the OSCRUN, PWRFAIL, and VBATEN bits
+            RTCYEAR         {0x06}, // RTC year register
+            CONTROL         {0x07}, // control register
+            OSCTRIM         {0x08}, // oscillator calibration register
+            EEUNLOCK        {0x09}, // protected eeprom unlock register
+            ALM0SEC         {0x0A}, // alarm 0, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
+            ALM1SEC         {0x11}, // alarm 1, 6 registers, Seconds, Minutes, Hours, DOW, Date, Month
+            ALM0WKDAY       {0x0D}, // DOW register has alarm config/flag bits
+            PWRDNMIN        {0x18}, // power-down timestamp, 4 registers, Minutes, Hours, Date, Month
+            PWRUPMIN        {0x1C}, // power-up timestamp, 4 registers, Minutes, Hours, Date, Month
             TIMESTAMP_SIZE  {8},    // number of bytes in the two timestamp registers
             SRAM_START_ADDR {0x20}, // first SRAM address
             SRAM_SIZE       {64},   // number of bytes of SRAM
             EEPROM_SIZE     {128},  // number of bytes of EEPROM
             EEPROM_PAGE_SIZE{8},    // number of bytes on an EEPROM page
-            UNIQUE_ID_ADDR  {0xF0}, // starting address for unique ID
+            UNIQUE_ID_ADDR  {0xF0}, // starting address for unique ID in EEPROM
             UNIQUE_ID_SIZE  {8};    // number of bytes in unique ID
 
         // Control Register bits
         static constexpr uint8_t
             OUT     {7},    // sets logic level on MFP when not used as square wave output
-            SQWE    {6},    // set to enable square wave output
-            ALM1    {5},    // alarm 1 is active
-            ALM0    {4},    // alarm 0 is active
-            EXTOSC  {3},    // set to drive the RTC registers from an external oscillator instead of a crystal
-            RS2     {2},    // RS2:0 set square wave output frequency: 0==1Hz, 1==4096Hz, 2==8192Hz, 3=32768Hz
-            RS1     {1},
-            RS0     {0};
+            SQWEN   {6},    // set to enable square wave output
+            ALM1EN  {5},    // alarm 1 is active
+            ALM0EN  {4},    // alarm 0 is active
+            EXTOSC  {3},    // enable external oscillator instead of a crystal
+            CRSTRIM {2},    // coarse trim mode enable
+            SQWFS1  {1},    // SQWFS1:0 square wave output freq: 0==1Hz, 1==4096Hz, 2==8192Hz, 3=32768Hz
+            SQWFS0  {0};
 
         // Other Control Bits
         static constexpr uint8_t
-            ST      {7},    // Seconds register (TIME_REG) oscillator start/stop bit, 1==Start, 0==Stop
-            HR1224  {6},    // Hours register (TIME_REG+2) 12 or 24 hour mode (24 hour mode==0)
-            AMPM    {5},    // Hours register (TIME_REG+2) AM/PM bit for 12 hour mode
-            OSCON   {5},    // Day register (TIME_REG+3) oscillator running (set and cleared by hardware)
-            VBAT    {4},    // Day register (TIME_REG+3) set by hardware when Vcc fails and RTC runs on battery.
-                            // VBAT is cleared by software, clearing VBAT also clears the timestamp registers
-            VBATEN  {3},    // Day register (TIME_REG+3) VBATEN==1 enables backup battery, VBATEN==0 disconnects the VBAT pin (e.g. to save battery)
-            LP      {5};    // Month register (TIME_REG+5) leap year bit
+            STOSC   {7},    // Seconds register (RTCSEC) oscillator start/stop bit, 1==Start, 0==Stop
+            HR1224  {6},    // Hours register (RTCHOUR) 12 or 24 hour mode (24 hour mode==0)
+            AMPM    {5},    // Hours register (RTCHOUR) AM/PM bit for 12 hour mode
+            OSCRUN  {5},    // Day register (RTCWKDAY) oscillator running (set and cleared by hardware)
+            PWRFAIL {4},    // Day register (RTCWKDAY) set by hardware when Vcc fails and RTC runs on battery.
+                            // PWRFAIL is cleared by software, clearing PWRFAIL also
+                            // clears the timestamp registers
+            VBATEN  {3},    // Day register (RTCWKDAY) VBATEN==1 enables backup
+                            // battery, VBATEN==0 disconnects the VBAT pin (e.g. to save battery)
+            LPYR    {5};    // Month register (RTCMTH) leap year bit
 
         // Alarm Control Bits
         static constexpr uint8_t
-            ALMPOL  {7},     // Alarm Polarity: Defines the logic level for the MFP when an alarm is triggered.
-            ALMC2   {6},     // Alarm configuration bits determine how alarms match. See ALM_MATCH defines below.
-            ALMC1   {5},
-            ALMC0   {4},
-            ALMIF   {3};     // Alarm Interrupt Flag: Set by hardware when an alarm was triggered, cleared by software.
+            ALMPOL      {7},    // Alarm Polarity: Defines the logic level for the MFP when an alarm is triggered.
+            ALMxMSK2    {6},    // Alarm configuration bits determine how alarms match. See ALARM_TYPES_t enum.
+            ALMxMSK1    {5},
+            ALMxMSK0    {4},
+            ALMxIF      {3};    // Alarm Interrupt Flag: Set by hardware when an alarm was triggered, cleared by software.
 
         MCP79412RTC() {};
         MCP79412RTC(bool initI2C) { (void)initI2C; }  // undocumented for backward compatibility

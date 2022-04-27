@@ -51,19 +51,19 @@ void MCP79412RTC::set(time_t t)
 bool MCP79412RTC::read(tmElements_t &tm)
 {
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
+    i2cWrite(RTCSEC);
     if (i2cEndTransmission() != 0) {
         return false;
     }
     else {
         // request 7 bytes (secs, min, hr, dow, date, mth, yr)
         i2cRequestFrom(RTC_ADDR, static_cast<uint8_t>(tmNbrFields));
-        tm.Second = bcd2dec(i2cRead() & ~_BV(ST));
+        tm.Second = bcd2dec(i2cRead() & ~_BV(STOSC));
         tm.Minute = bcd2dec(i2cRead());
         tm.Hour = bcd2dec(i2cRead() & ~_BV(HR1224));    // assumes 24hr clock
-        tm.Wday = i2cRead() & ~(_BV(OSCON) | _BV(VBAT) | _BV(VBATEN));    // mask off OSCON, VBAT, VBATEN bits
+        tm.Wday = i2cRead() & ~(_BV(OSCRUN) | _BV(PWRFAIL) | _BV(VBATEN));  // mask off OSCRUN, PWRFAIL, VBATEN bits
         tm.Day = bcd2dec(i2cRead());
-        tm.Month = bcd2dec(i2cRead() & ~_BV(LP));       // mask off the leap year bit
+        tm.Month = bcd2dec(i2cRead() & ~_BV(LPYR));     // mask off the leap year bit
         tm.Year = y2kYearToTm(bcd2dec(i2cRead()));
         return true;
     }
@@ -73,8 +73,8 @@ bool MCP79412RTC::read(tmElements_t &tm)
 void MCP79412RTC::write(tmElements_t &tm)
 {
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
-    i2cWrite(0x00);                             // stops the oscillator (Bit 7, ST == 0)
+    i2cWrite(RTCSEC);
+    i2cWrite(0x00);                             // stops the oscillator (Bit 7, STOSC == 0)
     i2cWrite(dec2bcd(tm.Minute));
     i2cWrite(dec2bcd(tm.Hour));                 // sets 24 hour format (Bit 6 == 0)
     i2cWrite(tm.Wday | _BV(VBATEN));            // enable battery backup operation
@@ -84,8 +84,8 @@ void MCP79412RTC::write(tmElements_t &tm)
     i2cEndTransmission();
 
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
-    i2cWrite(dec2bcd(tm.Second) | _BV(ST));     // set the seconds and start the oscillator (Bit 7, ST == 1)
+    i2cWrite(RTCSEC);
+    i2cWrite(dec2bcd(tm.Second) | _BV(STOSC));  // set the seconds and start the oscillator (Bit 7, STOSC == 1)
     i2cEndTransmission();
 }
 
@@ -251,13 +251,11 @@ uint8_t MCP79412RTC::eepromWait()
     uint8_t waitCount{0};
     uint8_t txStatus;
 
-    do
-    {
+    do {
         ++waitCount;
         i2cBeginTransmission(EEPROM_ADDR);
         i2cWrite(0);
         txStatus = i2cEndTransmission();
-
     } while (txStatus != 0);
 
     return waitCount;
@@ -269,7 +267,7 @@ uint8_t MCP79412RTC::eepromWait()
 // it and return it to the caller as a regular twos-complement integer.
 int16_t MCP79412RTC::calibRead()
 {
-    uint8_t val {ramRead(CALIB_REG)};
+    uint8_t val {ramRead(OSCTRIM)};
 
     if ( val & 0x80 ) return -(val & 0x7F);
     else return val;
@@ -283,7 +281,7 @@ void MCP79412RTC::calibWrite(int16_t value)
     if (value >= -127 && value <= 127) {
         uint8_t calibVal = abs(value);
         if (value < 0) calibVal += 128;
-        ramWrite(CALIB_REG, calibVal);
+        ramWrite(OSCTRIM, calibVal);
     }
 }
 
@@ -322,7 +320,7 @@ void MCP79412RTC::getEUI64(uint8_t* uniqueID)
 // Check to see if a power failure has occurred. If so, returns TRUE
 // as the function value, and returns the power down and power up
 // timestamps. After returning the time stamps, the RTC's timestamp
-// registers are cleared and the VBAT bit which indicates a power
+// registers are cleared and the PWRFAIL bit which indicates a power
 // failure is reset.
 //
 // Note that the power down and power up timestamp registers do not
@@ -341,12 +339,12 @@ void MCP79412RTC::getEUI64(uint8_t* uniqueID)
 bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
 {
     uint8_t day, yr;                // copies of the RTC Day and Year registers
-    ramRead(DAY_REG, &day, 1);
-    ramRead(YEAR_REG, &yr, 1);
+    ramRead(RTCWKDAY, &day, 1);
+    ramRead(RTCYEAR, &yr, 1);
     yr = y2kYearToTm(bcd2dec(yr));
-    if ( day & _BV(VBAT) ) {
+    if ( day & _BV(PWRFAIL) ) {
         i2cBeginTransmission(RTC_ADDR);
-        i2cWrite(PWRDWN_TS_REG);
+        i2cWrite(PWRDNMIN);
         i2cEndTransmission();
 
         i2cRequestFrom(RTC_ADDR, TIMESTAMP_SIZE);       // read both timestamp registers, 8 bytes total
@@ -367,7 +365,7 @@ bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
         *powerDown = makeTime(dn);
         *powerUp = makeTime(up);
 
-        // clear the VBAT bit, which causes the RTC hardware to clear the timestamps too.
+        // clear the PWRFAIL bit, which causes the RTC hardware to clear the timestamps too.
         // I suppose there is a risk here that the day has changed since we read it,
         // but the Day of Week is actually redundant data and the makeTime() function
         // does not use it. This could be an issue if someone is reading the RTC
@@ -375,8 +373,8 @@ bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
         // and also because we don't provide a method to read the RTC clock/calendar
         // registers directly, we won't lose any sleep about it at this point unless
         // some issue is actually brought to our attention ;-)
-        day &= ~_BV(VBAT);
-        ramWrite(DAY_REG, &day , 1);
+        day &= ~_BV(PWRFAIL);
+        ramWrite(RTCWKDAY, &day , 1);
 
         // adjust the powerDown timestamp if needed (see notes above)
         if (*powerDown > *powerUp) {
@@ -393,14 +391,14 @@ bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
 void MCP79412RTC::squareWave(uint8_t freq)
 {
     uint8_t ctrlReg;
-    ramRead(CTRL_REG, &ctrlReg, 1);
+    ramRead(CONTROL, &ctrlReg, 1);
     if (freq > 3) {
-        ctrlReg &= ~_BV(SQWE);
+        ctrlReg &= ~_BV(SQWEN);
     }
     else {
-        ctrlReg = (ctrlReg & 0xF8) | _BV(SQWE) | freq;
+        ctrlReg = (ctrlReg & 0xF8) | _BV(SQWEN) | freq;
     }
-    ramWrite(CTRL_REG, &ctrlReg, 1);
+    ramWrite(CONTROL, &ctrlReg, 1);
 }
 
 // Set an alarm time. Sets the alarm registers only, does not enable
@@ -408,14 +406,14 @@ void MCP79412RTC::squareWave(uint8_t freq)
 void MCP79412RTC::setAlarm(ALARM_NBR_t alarmNumber, time_t alarmTime)
 {
     uint8_t day;                // need to preserve bits in the day (of week) register
-    ramRead( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG) , &day, 1);
+    ramRead( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC) , &day, 1);
     tmElements_t tm;
     breakTime(alarmTime, tm);
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite( ALM0_REG + alarmNumber * (ALM1_REG - ALM0_REG) );
+    i2cWrite( ALM0SEC + alarmNumber * (ALM1SEC - ALM0SEC) );
     i2cWrite(dec2bcd(tm.Second));
     i2cWrite(dec2bcd(tm.Minute));
-    i2cWrite(dec2bcd(tm.Hour));                  // sets 24 hour format (Bit 6 == 0)
+    i2cWrite(dec2bcd(tm.Hour));         // sets 24 hour format (Bit 6 == 0)
     i2cWrite( (day & 0xF8) + tm.Wday );
     i2cWrite(dec2bcd(tm.Day));
     i2cWrite(dec2bcd(tm.Month));
@@ -427,18 +425,18 @@ void MCP79412RTC::setAlarm(ALARM_NBR_t alarmNumber, time_t alarmTime)
 void MCP79412RTC::enableAlarm(ALARM_NBR_t alarmNumber, uint8_t alarmType)
 {
     uint8_t ctrl;               // control register has alarm enable bits
-    ramRead(CTRL_REG, &ctrl, 1);
+    ramRead(CONTROL, &ctrl, 1);
     if (alarmType < ALM_DISABLE) {
         uint8_t day;                            // alarm day register has config & flag bits
-        ramRead(ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
+        ramRead(ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
         day = ( day & 0x87 ) | alarmType << 4;  // reset interrupt flag, OR in the config bits
-        ramWrite(ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
-        ctrl |= _BV(ALM0 + alarmNumber);        // enable the alarm
+        ramWrite(ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
+        ctrl |= _BV(ALM0EN + alarmNumber);      // enable the alarm
     }
     else {
-        ctrl &= ~(_BV(ALM0 + alarmNumber));     // disable the alarm
+        ctrl &= ~(_BV(ALM0EN + alarmNumber));   // disable the alarm
     }
-    ramWrite(CTRL_REG, &ctrl, 1);
+    ramWrite(CONTROL, &ctrl, 1);
 }
 
 // Returns true or false depending on whether the given alarm has been
@@ -447,10 +445,10 @@ void MCP79412RTC::enableAlarm(ALARM_NBR_t alarmNumber, uint8_t alarmType)
 bool MCP79412RTC::alarm(ALARM_NBR_t alarmNumber)
 {
     uint8_t day;                // alarm day register has config & flag bits
-    ramRead( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
-    if (day & _BV(ALMIF)) {
-        day &= ~_BV(ALMIF);     // turn off the alarm "interrupt" flag
-        ramWrite( ALM0_DAY + alarmNumber * (ALM1_REG - ALM0_REG), &day, 1);
+    ramRead( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
+    if (day & _BV(ALMxIF)) {
+        day &= ~_BV(ALMxIF);    // turn off the alarm "interrupt" flag
+        ramWrite( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
         return true;
     }
     else
@@ -462,12 +460,12 @@ bool MCP79412RTC::alarm(ALARM_NBR_t alarmNumber)
 void MCP79412RTC::out(bool level)
 {
     uint8_t ctrlReg;
-    ramRead(CTRL_REG, &ctrlReg, 1);
+    ramRead(CONTROL, &ctrlReg, 1);
     if (level)
         ctrlReg |= _BV(OUT);
     else
         ctrlReg &= ~_BV(OUT);
-    ramWrite(CTRL_REG, &ctrlReg, 1);
+    ramWrite(CONTROL, &ctrlReg, 1);
 }
 
 // Specifies the logic level on the Multi-Function Pin (MFP) when an
@@ -483,25 +481,25 @@ void MCP79412RTC::out(bool level)
 void MCP79412RTC::alarmPolarity(bool polarity)
 {
     uint8_t alm0Day;
-    ramRead(ALM0_DAY, &alm0Day, 1);
+    ramRead(ALM0WKDAY, &alm0Day, 1);
     if (polarity)
         alm0Day |= _BV(OUT);
     else
         alm0Day &= ~_BV(OUT);
-    ramWrite(ALM0_DAY, &alm0Day, 1);
+    ramWrite(ALM0WKDAY, &alm0Day, 1);
 }
 
-// Check to see if the RTC's oscillator is started (ST bit in seconds
+// Check to see if the RTC's oscillator is started (STOSC bit in seconds
 // register). Returns true if started.
 bool MCP79412RTC::isRunning()
 {
     i2cBeginTransmission(RTC_ADDR);
-    i2cWrite(TIME_REG);
+    i2cWrite(RTCSEC);
     i2cEndTransmission();
 
     // request just the seconds register
     i2cRequestFrom(RTC_ADDR, static_cast<uint8_t>(1));
-    return i2cRead() & _BV(ST);
+    return i2cRead() & _BV(STOSC);
 }
 
 // Set or clear the VBATEN bit. Setting the bit powers the clock and
@@ -510,13 +508,13 @@ bool MCP79412RTC::isRunning()
 void MCP79412RTC::vbaten(bool enable)
 {
     uint8_t day;
-    ramRead(DAY_REG, &day, 1);
+    ramRead(RTCWKDAY, &day, 1);
     if (enable)
         day |= _BV(VBATEN);
     else
         day &= ~_BV(VBATEN);
 
-    ramWrite(DAY_REG, &day, 1);
+    ramWrite(RTCWKDAY, &day, 1);
     return;
 }
 

@@ -21,3 +21,6 @@ out	KEYWORD2
 alarmPolarity	KEYWORD2
 isRunning	KEYWORD2
 vbaten	KEYWORD2
+dumpRegs	KEYWORD2
+dumpSRAM	KEYWORD2
+dumpEEPROM	KEYWORD2
