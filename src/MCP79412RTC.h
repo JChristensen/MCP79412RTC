@@ -143,42 +143,44 @@ class MCP79412RTC
         MCP79412RTC(bool initI2C) { (void)initI2C; }  // undocumented for backward compatibility
         void begin();
         static time_t get();
-        static void set(time_t t);
-        static bool read(tmElements_t &tm);
-        static void write(tmElements_t &tm);
-        void sramWrite(uint8_t addr, uint8_t value);
-        void sramWrite(uint8_t addr, uint8_t* values, uint8_t nBytes);
-        uint8_t sramRead(uint8_t addr);
-        void sramRead(uint8_t addr, uint8_t* values, uint8_t nBytes);
-        void eepromWrite(uint8_t addr, uint8_t value);
-        void eepromWrite(uint8_t addr, uint8_t* values, uint8_t nBytes);
-        uint8_t eepromRead(uint8_t addr);
-        void eepromRead(uint8_t addr, uint8_t* values, uint8_t nBytes);
+        static void set(const time_t t);
+        static bool read(tmElements_t& tm);
+        static void write(const tmElements_t& tm);
+        void sramWrite(const uint8_t addr, const uint8_t value);
+        void sramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
+        uint8_t sramRead(const uint8_t addr);
+        void sramRead(const uint8_t addr, uint8_t* values, const uint8_t nBytes);
+        void eepromWrite(const uint8_t addr, const uint8_t value);
+        void eepromWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
+        uint8_t eepromRead(const uint8_t addr);
+        void eepromRead(const uint8_t addr, uint8_t* values, const uint8_t nBytes);
         int16_t calibRead();
-        void calibWrite(int16_t value);
+        void calibWrite(const int16_t value);
         void idRead(uint8_t* uniqueID);
         void getEUI64(uint8_t* uniqueID);
         bool powerFail(time_t* powerDown, time_t* powerUp);
-        void squareWave(uint8_t freq);
-        void setAlarm(ALARM_NBR_t alarmNumber, time_t alarmTime);
-        void enableAlarm(ALARM_NBR_t alarmNumber, uint8_t alarmType);
-        bool alarm(ALARM_NBR_t alarmNumber);
-        void out(bool level);
-        void alarmPolarity(bool polarity);
+        void squareWave(const SQWAVE_FREQS_t freq);
+        void setAlarm(const ALARM_NBR_t alarmNumber, const time_t alarmTime);
+        void setAlarm(const ALARM_NBR_t alarmNumber, const uint16_t y, const uint8_t mon,
+                      const uint8_t d, const uint8_t h, const uint8_t m, const uint8_t s);
+        void enableAlarm(const ALARM_NBR_t alarmNumber, const ALARM_TYPES_t alarmType);
+        bool alarm(const ALARM_NBR_t alarmNumber);
+        void out(const bool level);
+        void alarmPolarity(const bool polarity);
         bool isRunning();
-        void vbaten(bool enable);
-        void dumpRegs(uint32_t startAddr=0, uint32_t nBytes=32);
-        void dumpSRAM(uint32_t startAddr=0, uint32_t nBytes=64);
-        void dumpEEPROM(uint32_t startAddr=0, uint32_t nBytes=128);
+        void vbaten(const bool enable);
+        void dumpRegs(const uint32_t startAddr=0, const uint32_t nBytes=32);
+        void dumpSRAM(const uint32_t startAddr=0, const uint32_t nBytes=64);
+        void dumpEEPROM(const uint32_t startAddr=0, const uint32_t nBytes=128);
 
     private:
-        static void ramWrite(uint8_t addr, uint8_t value);
-        static void ramWrite(uint8_t addr, uint8_t* values, uint8_t nBytes);
+        static void ramWrite(const uint8_t addr, const uint8_t value);
+        static void ramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
         static uint8_t ramRead(uint8_t addr);
-        static void ramRead(uint8_t addr, uint8_t* values, uint8_t nBytes);
+        static void ramRead(const uint8_t addr, uint8_t* values, const uint8_t nBytes);
         static uint8_t eepromWait();
-        static uint8_t dec2bcd(uint8_t num);
-        static uint8_t bcd2dec(uint8_t num);
+        static uint8_t dec2bcd(const uint8_t num);
+        static uint8_t bcd2dec(const uint8_t num);
 };
 
 #endif

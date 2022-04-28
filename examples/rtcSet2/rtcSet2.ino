@@ -14,28 +14,29 @@
 // example may be of limited usefulness as an actual clock.
 
 #include <MCP79412RTC.h>    // https://github.com/JChristensen/MCP79412RTC
-#include <TimeLib.h>        // https://github.com/PaulStoffregen/Time
 
+MCP79412RTC myRTC;
 tmElements_t tm;
 
 void setup()
 {
+    myRTC.begin();
     delay(2000);
-    Serial.begin(9600);
+    Serial.begin(115200);
 
-    tm.Hour = 23;             // set the tm structure to 23h31m30s on Fri 13Feb2009
+    tm.Hour = 23;             // set the tm structure to 23h31m30s on 27Apr2022
     tm.Minute = 31;
     tm.Second = 30;
-    tm.Year = 2009 - 1970;    // tmElements_t.Year is the offset from 1970.
-    tm.Month = 2;
-    tm.Day = 13;
+    tm.Year = 2022 - 1970;    // tmElements_t.Year is the offset from 1970.
+    tm.Month = 4;
+    tm.Day = 27;
     tm.Wday = dowFriday;      // See enum in Time.h: Sun=1, Mon=2, ... Sat=7
-    RTC.write(tm);            // set the RTC from the tm structure
+    myRTC.write(tm);          // set the RTC from the tm structure
 }
 
 void loop()
 {
-    RTC.read(tm);
+    myRTC.read(tm);
     Serial.print(tm.Hour, DEC);
     Serial.print(':');
     Serial.print(tm.Minute,DEC);

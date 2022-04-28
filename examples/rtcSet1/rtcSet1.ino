@@ -10,17 +10,27 @@
 // example may be of limited usefulness as an actual clock.
 
 #include <MCP79412RTC.h>    // https://github.com/JChristensen/MCP79412RTC
-#include <TimeLib.h>        // https://github.com/PaulStoffregen/Time
+
+MCP79412RTC myRTC;
 
 void setup()
 {
+    myRTC.begin();
     delay(2000);
-    Serial.begin(9600);
+    Serial.begin(115200);
 
-    setTime(23, 31, 30, 13, 2, 2009);   // set the system time to 23h31m30s on 13Feb2009
+    setTime(23, 31, 30, 27, 4, 2022);   // set the system time to 23h31m30s on 27Apr2022
                                         // the setTime() function is from the Time.h library.
                                         // setTime(hour, minute, second, day, month, year);
-    RTC.set(now());                     // set the RTC from the system time
+
+    myRTC.set(now());                   // set the RTC from the system time
+
+    // sync the system time with the RTC every five minutes (by default)
+    setSyncProvider(myRTC.get);
+    if (timeStatus() != timeSet)
+        Serial.println("Unable to sync with the RTC");
+    else
+        Serial.println("RTC has set the system time");
 }
 
 void loop()

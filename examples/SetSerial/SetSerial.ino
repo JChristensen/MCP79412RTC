@@ -32,7 +32,6 @@
 
 #include <MCP79412RTC.h>    // https://github.com/JChristensen/MCP79412RTC
 #include <Streaming.h>      // http://arduiniana.org/libraries/streaming/
-#include <TimeLib.h>        // https://github.com/PaulStoffregen/Time
 
 MCP79412RTC myRTC;
 
@@ -133,7 +132,7 @@ void loop()
 }
 
 // format and print a time_t value
-void printTime(time_t t)
+void printTime(const time_t t)
 {
     char buf[25];
     char m[4];    // temporary storage for month string (DateStrings.cpp uses shared buffer)

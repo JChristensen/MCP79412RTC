@@ -9,15 +9,18 @@
 // Upload the sketch again to recompile it with the current time.
 
 #include <MCP79412RTC.h>    // https://github.com/JChristensen/MCP79412RTC
-#include <TimeLib.h>        // https://github.com/PaulStoffregen/Time
+
+MCP79412RTC myRTC;
+time_t compileTime(const uint32_t fudge=10);    // function prototype
 
 void setup()
 {
+    myRTC.begin();
     delay(2000);
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     setTime(compileTime());    // set the system time to the sketch compile time
-    RTC.set(now());            // set the RTC from the system time
+    myRTC.set(now());          // set the RTC from the system time
 }
 
 void loop()
@@ -26,10 +29,11 @@ void loop()
     delay(1000);
 }
 
-// Function to return the compile date and time as a time_t value
-time_t compileTime()
+// A function to return the compile date and time as a time_t value.
+// The fudge argument (seconds) is used to adjust for compile and upload time, YMMV.
+time_t compileTime(const uint32_t fudge)
 {
-    const uint32_t FUDGE(15);        // fudge factor to allow for compile time (seconds, YMMV)
+    //const uint32_t fudge(10);        // fudge factor to allow for compile time (seconds, YMMV)
     const char *compDate = __DATE__, *compTime = __TIME__, *months = "JanFebMarAprMayJunJulAugSepOctNovDec";
     char chMon[3], *m;
     tmElements_t tm;
@@ -46,7 +50,7 @@ time_t compileTime()
     tm.Minute = atoi(compTime + 3);
     tm.Second = atoi(compTime + 6);
     t = makeTime(tm);
-    return t + FUDGE;        // add fudge factor to allow for compile time
+    return t + fudge;        // add fudge factor to allow for compile time
 }
 
 // Print time (and date) given a time_t value
