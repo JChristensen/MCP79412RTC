@@ -10,6 +10,7 @@
 #include <MCP79412RTC.h>    // https://github.com/JChristensen/MCP79412RTC
 #include <TimeLib.h>        // https://github.com/PaulStoffregen/Time
 
+MCP79412RTC RTC;
 const uint32_t PRINT_INTERVAL(10000);   // ms between printing the time
 uint32_t ms, msLast;
 
