@@ -2,19 +2,32 @@
 https://github.com/JChristensen/MCP79412RTC  
 README file  
 Jack Christensen  
-Sep 2012
+May 2025
+
+## License
+Arduino MCP79412 RTC Library Copyright (C) 2012-2025 byJack Christensen GNU GPL v3.0
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License v3.0 as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/gpl.html>
+
+## Important note: Library v2.0.0
+The 2.0.0 version of the library has some significant changes and is not completely backwards compatible with earlier versions. These changes provide a more consistent API and reduce the possibility of name collisions. While sketches using this library will likely require changes as a result, these should be mostly straightforward.
+
+ - The library no longer defines an `MCP79412RTC` object, therefore each sketch needs to define  one. (Previous versions of the library defined an `MCP79412RTC` object named `RTC`, although only for AVR architecture. Consider using a name other than `RTC` as this can cause a name collision on some architectures.)
+ - The constructor no longer has the capability to initialize the I2C bus and no longer accepts an optional parameter. Therefore, the sketch needs to call `MCP79412RTC::begin()` in the `setup()` function or elsewhere as appropriate.
+ - To reduce the possibility of name collisions, the enumerations as well as register addresses, etc. are now defined in the header file within the `MCP79412RTC` class. Therefore, when using any of these names, it will be necessary to include the `MCP79412RTC` scope, e.g. `myRTC.alarm(MCP79412RTC::ALARM_1);`
+ - The example sketches and documentation have been updated to reflect these changes.
 
 ## Introduction
 **MCP79412RTC** is an Arduino library that supports the Microchip MCP7941x Real-Time Clock/Calendar chips. This library is intended to be used with [PJRC's Arduino Time library](https://github.com/PaulStoffregen/Time).
 
-The **MCP79412RTC** library is a drop-in replacement for the (older) **DS1307RTC** library by Michael Margolis that is supplied with the [Arduino Time library](https://www.arduino.cc/playground/Code/Time) (but not for [PJRC's newer version of the DS1307RTC library](https://www.pjrc.com/teensy/td_libs_DS1307RTC.html)).  To change from using a DS1307 RTC to an MCP7941x RTC, it is only necessary to use `#include <MCP79412RTC.h>` instead of `#include <DS1307RTC.h>`.
-
-The **MCP79412RTC** library also implements functions to support the additional features of the MCP7941x RTC.
-
 **For more information on the MCP79412, see:**  
+The [Microchip MCP79412 Product Page](https://www.microchip.com/en-us/product/MCP79412) for specs, datasheet, etc.  
 [My Blog Post](http://goo.gl/MkBnjR), summarizing the features and advantages of the MCP79412  
 [My Power Outage Logger Project](http://goo.gl/RfM5os), an Arduino-based project featuring the MCP79412  
-The [Microchip MCP79412 Product Page](http://goo.gl/SHfKe0) for specs, datasheet, etc.  
 
 ## Examples
 The following example sketches are included with the **MCP79412RTC** library:
@@ -23,16 +36,74 @@ The following example sketches are included with the **MCP79412RTC** library:
 - **rtcSet2:** Similar to **rtcSet1**, a different way to hard-code the date and time.
 - **rtcSet3:** Set the RTC to the sketch compile date and time.
 - **SetSerial:** Set the RTC's date, time, and calibration register from the Arduino serial monitor.
-- **rtcSetSerial:** Set the RTC via input from the Arduino serial monitor.
-- **TimeRTC:** Same as the example of the same name provided with the **Time** library, demonstrating the interchangeability of the **MCP79412RTC** library with the **DS1307RTC** library.
+- **TimeRTC:** Similar to the example of the same name provided with the **Time** library.
 - **PowerOutageLogger:** A comprehensive example that implements a power failure logger using the MCP79412's ability to capture power down and power up times.  Power failure events are logged to the MCP79412's SRAM.  Output is to the Arduino serial monitor.
 - **tiny79412_KnockBang:** Demonstrates interfacing an ATtiny45/85 to the MCP79412.
 
-## Usage notes
-Similar to the **DS1307RTC** library, the **MCP79412RTC** library instantiates an RTC object; the user does not need to do this.
+## Enumerations
+### ALARM_TYPES_t
+##### Description
+Symbolic names used with the `enableAlarm()` function described below.
+##### Values
+- ALM_MATCH_SECONDS -- Triggers alarm when the seconds in the RTC time keeping register match the seconds in the alarm register.
+- ALM_MATCH_MINUTES -- Triggers when RTC time minutes match alarm minutes.
+- ALM_MATCH_HOURS -- Triggers when RTC time hours match alarm hours.
+- ALM_MATCH_DAY -- Triggers when day of the week matches. (Triggers at midnight.)
+- ALM_MATCH_DATE -- Triggers when date matches. (Triggers at midnight.)
+- ALM_MATCH_DATETIME -- Triggers when seconds, minutes, hours, day of week, date and month all match.
+- ALM_DISABLE -- Disables the alarm.
+
+### ALARM_NBR_t
+##### Description
+Symbolic names used with alarm functions.
+##### Values
+- ALARM_0
+- ALARM_1
+
+### SQWAVE_FREQS_t
+##### Description
+Symbolic names used with the squareWave() function (described below).
+##### Values
+- SQWAVE_1_HZ,
+- SQWAVE_4096_HZ,
+- SQWAVE_8192_HZ,
+- SQWAVE_32768_HZ,
+- SQWAVE_NONE
+
+## Constructor
+### MCP79412RTC()
+##### Description
+Instantiates an `MCP79412RTC` object.
+##### Syntax
+`MCP79412RTC myRTC;`
+##### Parameters
+None.
+##### Returns
+None.
+##### Example
+```c++
+MCP79412RTC myRTC;
+```
+
+## Initialization function
+### begin()
+##### Description
+Initializes the I2C bus. Calls `Wire.begin()`.
+##### Syntax
+`begin();`
+##### Parameters
+None.
+##### Returns
+None.
+##### Example
+```c++
+MCP79412RTC myRTC;
+void setup() {
+    myRTC.begin();
+}
+```
 
 ## Functions for setting and reading the time
-
 ### get()
 ##### Description
 Reads the current date and time from the RTC and returns it as a *time_t* value. Returns zero if an I2C error occurs (RTC not present, etc.).
@@ -124,146 +195,6 @@ else
 	//do something else
 ```
 
-## Functions for reading and writing static RAM (SRAM)
-The MCP79412 RTC has 64 bytes of battery-backed SRAM that can be read and written with the following functions using addresses between 0 and 63.  Addresses passed to these functions are constrained to the valid range by an AND function.
-
-### sramWrite(byte addr, byte value)
-##### Description
-Writes a single byte to the SRAM.
-##### Syntax
-`RTC.sramWrite(addr, value);`
-##### Parameters
-**addr:** SRAM address to write *(byte)*  
-**value:** Value to write *(byte)*  
-##### Returns
-None.
-##### Example
-```c++
-RTC.sramWrite(3, 14);   //write the value 14 to SRAM address 3
-```
-
-### sramWrite(byte addr, byte *values, byte nBytes)
-##### Description
-Writes multiple bytes to consecutive SRAM locations.  *nBytes* must be between 1 and 31.  Invalid values of *nBytes*, or combinations of *addr* and *nBytes* that would result in addressing past the last byte of SRAM will result in no action.
-##### Syntax
-`RTC.sramWrite(addr, values, nBytes);`
-##### Parameters
-**addr:** First SRAM address to write *(byte)*  
-**value:** An array of values to write _(*byte)_  
-**nBytes:** Number of bytes to write *(byte)*  
-##### Returns
-None.
-##### Example
-```c++
-//write 1, 2, ..., 8 to the first eight SRAM locations
-byte buf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-RTC.sramWrite(0, buf, 8);
-```
-
-### sramRead(byte addr)
-##### Description
-Reads a single byte from SRAM.
-##### Syntax
-`RTC.sramRead(addr);`
-##### Parameters
-**addr:** SRAM address to read *(byte)*
-##### Returns
-The value read *(byte)*
-##### Example
-```c++
-byte val;
-val = RTC.sramRead(3);  //read the value from SRAM location 3
-```
-
-### sramRead(byte addr, byte *values, byte nBytes)
-##### Description
-Reads multiple bytes from consecutive SRAM locations.  nBytes must be between 1 and 32.  Invalid values of *nBytes*, or combinations of *addr* and *nBytes* that would result in addressing past the last byte of SRAM will result in no action.
-##### Syntax
-`RTC.sramRead(addr, values, nBytes);`
-##### Parameters
-**addr:** First SRAM address to read *(byte)*  
-**values:** An array to receive the read values _(*byte)_  
-**nBytes:** Number of bytes to read *(byte)*  
-##### Returns
-No function value returned.  Bytes read from SRAM are returned to the **values** array.
-##### Example
-```c++
-//read the last eight locations of SRAM into buf
-byte buf[8];
-RTC.sramRead(56, buf, 8);
-```
-	
-## Functions for Reading and writing EEPROM
-The MCP79412 RTC has 128 bytes of non-volatile EEPROM that can be read and written with the following functions using addresses between 0 and 127.  Addresses passed to these functions are constrained to the valid range by an AND function.
-
-EEPROM is paged memory with a page size of 8 bytes; when writing multiple bytes, this this limits the number of bytes that can be written at one time to 8.  Page writes must start on a page boundary.
-
-### eepromWrite(byte addr, byte value)
-##### Description
-Writes a single byte to EEPROM.
-##### Syntax
-`RTC.eepromWrite(addr, value);`
-##### Parameters
-**addr:** EEPROM address to write *(byte)*  
-**value:** Value to write *(byte)*  
-##### Returns
-None.
-##### Example
-```c++
-RTC.eepromWrite(42, 55);   //write the value 55 to EEPROM address 42
-```
-
-### eepromWrite(byte addr, byte *values, byte nBytes)
-##### Description
-Writes a page (8 bytes) or less to EEPROM.  *addr* should be a page start address (0, 8, ..., 120), but if not, is ruthlessly coerced into a valid value with an AND function.  *nBytes* must be between 1 and 8, other values result in no action.
-##### Syntax
-`RTC.eepromWrite(addr, values, nBytes);`
-##### Parameters
-**addr:** First EEPROM address to write *(byte)*  
-**value:** An array of values to write _(*byte)_  
-**nBytes:** Number of bytes to write *(byte)*  
-##### Returns
-None.
-##### Example
-```c++
-//write 1, 2, ..., 8 to the first eight EEPROM locations
-byte buf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-RTC.eepromWrite(0, buf, 8);
-```
-
-### eepromRead(byte addr)
-##### Description
-Reads a single byte from EEPROM and returns the value.
-##### Syntax
-`RTC.eepromRead(byte addr);`
-##### Parameters
-**addr:** EEPROM address to read *(byte)*
-##### Returns
-The value read *(byte)*
-##### Example
-```c++
-byte val;
-val = RTC.eepromRead(42);  //read the value from EEPROM location 42
-```
-
-### eepromRead(byte addr, byte *values, byte nBytes)
-##### Description
-Reads multiple bytes from consecutive EEPROM locations.  *nBytes* must be between 1 and 32. Invalid values of *nBytes*, or combinations of *addr* and *nBytes* that would result in addressing past the last byte of EEPROM will result in no action.
-##### Syntax
-`RTC.eepromRead(addr, values, nBytes);`
-##### Parameters
-**addr:** First EEPROM address to read *(byte)*  
-**values:** An array to receive the read values _(*byte)_  
-**nBytes:** Number of bytes to read *(byte)*  
-##### Returns
-No function value returned.  The bytes read from EEPROM are returned to the **values** array.
-##### Example
-```c++
-//read the last eight locations of EEPROM into buf
-byte buf[8];
-RTC.eepromRead(120, buf, 8);
-```
-
 ## Alarm functions
 The MCP79412 RTC has two alarms (Alarm-0 and Alarm-1) that can be used separately or simultaneously.  When an alarm is triggered, a flag is set in the RTC that can be detected with the `alarm()` function below.  Optionally, the RTC's Multi-Function Pin (MFP) can be driven to either a low or high logic level when an alarm is triggered.  When using the MFP with both alarms, be sure to read the comments on the `alarmPolarity()` function below.
 
@@ -347,8 +278,147 @@ None.
 RTC.alarmPolarity(HIGH);    //drives MFP high when an alarm is triggered
 ```
 
-## Calibration, power failure, and other functions
+## Functions for reading and writing static RAM (SRAM)
+The MCP79412 RTC has 64 bytes of battery-backed SRAM that can be read and written with the following functions using addresses between 0 and 63.  Addresses passed to these functions are constrained to the valid range by an AND function.
 
+### sramWrite(byte addr, byte value)
+##### Description
+Writes a single byte to the SRAM.
+##### Syntax
+`RTC.sramWrite(addr, value);`
+##### Parameters
+**addr:** SRAM address to write *(byte)*  
+**value:** Value to write *(byte)*  
+##### Returns
+None.
+##### Example
+```c++
+RTC.sramWrite(3, 14);   //write the value 14 to SRAM address 3
+```
+
+### sramWrite(byte addr, byte *values, byte nBytes)
+##### Description
+Writes multiple bytes to consecutive SRAM locations.  *nBytes* must be between 1 and 31.  Invalid values of *nBytes*, or combinations of *addr* and *nBytes* that would result in addressing past the last byte of SRAM will result in no action.
+##### Syntax
+`RTC.sramWrite(addr, values, nBytes);`
+##### Parameters
+**addr:** First SRAM address to write *(byte)*  
+**value:** An array of values to write _(*byte)_  
+**nBytes:** Number of bytes to write *(byte)*  
+##### Returns
+None.
+##### Example
+```c++
+//write 1, 2, ..., 8 to the first eight SRAM locations
+byte buf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+RTC.sramWrite(0, buf, 8);
+```
+
+### sramRead(byte addr)
+##### Description
+Reads a single byte from SRAM.
+##### Syntax
+`RTC.sramRead(addr);`
+##### Parameters
+**addr:** SRAM address to read *(byte)*
+##### Returns
+The value read *(byte)*
+##### Example
+```c++
+byte val;
+val = RTC.sramRead(3);  //read the value from SRAM location 3
+```
+
+### sramRead(byte addr, byte *values, byte nBytes)
+##### Description
+Reads multiple bytes from consecutive SRAM locations.  nBytes must be between 1 and 32.  Invalid values of *nBytes*, or combinations of *addr* and *nBytes* that would result in addressing past the last byte of SRAM will result in no action.
+##### Syntax
+`RTC.sramRead(addr, values, nBytes);`
+##### Parameters
+**addr:** First SRAM address to read *(byte)*  
+**values:** An array to receive the read values _(*byte)_  
+**nBytes:** Number of bytes to read *(byte)*  
+##### Returns
+No function value returned.  Bytes read from SRAM are returned to the **values** array.
+##### Example
+```c++
+//read the last eight locations of SRAM into buf
+byte buf[8];
+RTC.sramRead(56, buf, 8);
+```
+
+## Functions for Reading and writing EEPROM
+The MCP79412 RTC has 128 bytes of non-volatile EEPROM that can be read and written with the following functions using addresses between 0 and 127.  Addresses passed to these functions are constrained to the valid range by an AND function.
+
+EEPROM is paged memory with a page size of 8 bytes; when writing multiple bytes, this this limits the number of bytes that can be written at one time to 8.  Page writes must start on a page boundary.
+
+### eepromWrite(byte addr, byte value)
+##### Description
+Writes a single byte to EEPROM.
+##### Syntax
+`RTC.eepromWrite(addr, value);`
+##### Parameters
+**addr:** EEPROM address to write *(byte)*  
+**value:** Value to write *(byte)*  
+##### Returns
+None.
+##### Example
+```c++
+RTC.eepromWrite(42, 55);   //write the value 55 to EEPROM address 42
+```
+
+### eepromWrite(byte addr, byte *values, byte nBytes)
+##### Description
+Writes a page (8 bytes) or less to EEPROM.  *addr* should be a page start address (0, 8, ..., 120), but if not, is ruthlessly coerced into a valid value with an AND function.  *nBytes* must be between 1 and 8, other values result in no action.
+##### Syntax
+`RTC.eepromWrite(addr, values, nBytes);`
+##### Parameters
+**addr:** First EEPROM address to write *(byte)*  
+**value:** An array of values to write _(*byte)_  
+**nBytes:** Number of bytes to write *(byte)*  
+##### Returns
+None.
+##### Example
+```c++
+//write 1, 2, ..., 8 to the first eight EEPROM locations
+byte buf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+RTC.eepromWrite(0, buf, 8);
+```
+
+### eepromRead(byte addr)
+##### Description
+Reads a single byte from EEPROM and returns the value.
+##### Syntax
+`RTC.eepromRead(byte addr);`
+##### Parameters
+**addr:** EEPROM address to read *(byte)*
+##### Returns
+The value read *(byte)*
+##### Example
+```c++
+byte val;
+val = RTC.eepromRead(42);  //read the value from EEPROM location 42
+```
+
+### eepromRead(byte addr, byte *values, byte nBytes)
+##### Description
+Reads multiple bytes from consecutive EEPROM locations.  *nBytes* must be between 1 and 32. Invalid values of *nBytes*, or combinations of *addr* and *nBytes* that would result in addressing past the last byte of EEPROM will result in no action.
+##### Syntax
+`RTC.eepromRead(addr, values, nBytes);`
+##### Parameters
+**addr:** First EEPROM address to read *(byte)*  
+**values:** An array to receive the read values _(*byte)_  
+**nBytes:** Number of bytes to read *(byte)*  
+##### Returns
+No function value returned.  The bytes read from EEPROM are returned to the **values** array.
+##### Example
+```c++
+//read the last eight locations of EEPROM into buf
+byte buf[8];
+RTC.eepromRead(120, buf, 8);
+```
+
+## Calibration, power failure, and other functions
 ### calibWrite(int value)
 ##### Description
 Writes the given value to the RTC calibration register.  This is an adjustment factor in PPM (approximately), and must be between -127 and 127.  Negative numbers cause the RTC to run faster, positive numbers cause it to run slower.

@@ -4,17 +4,20 @@
 // GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
 //
 // Example sketch. Digital clock display using an MCP79412 Real-Time
-//  Clock/Calendar and an ATtiny45/85 with a 1MHz system clock.
+// Clock/Calendar and an ATtiny45/85 with a 1MHz system clock.
 //
 // Tested with Arduino 1.8.5, and:
 //   ATTinyCore, https://github.com/SpenceKonde/ATTinyCore
 //   TinyISP, https://github.com/Coding-Badly/TinyISP
 //
+// Disable Link Time Optimization (LTO) as it causes compile errors (there 
+// are still some warnings.) 
+//
 // Run TinyISP on an ATmega microcontroller that does not have an LED
 // connected to pin 13 (SCK). The LED causes problems because the SPI
 // pins are also the I2C pins on the ATtiny. Connect MISO, MOSI, SCK
 // on the ATmega to the corresponding pins on the ATtiny through 220Ω
-// resistors for safety. Use 4.7K pullup resistors on the ATtiny
+// resistors for safety. Use 4.7k pullup resistors on the ATtiny
 // I2C bus.
 //
 // Jack Christensen 21Aug2013
@@ -23,13 +26,16 @@
 #include <TimeLib.h>                // https://github.com/PaulStoffregen/Time
 #include <TinyDebugKnockBang.h>     // https://github.com/Coding-Badly/TinyDebugKnockBang
 
+MCP79412RTC myRTC;
+
 void setup()
 {
+    myRTC.begin();
     Debug.begin(250000);
 
     // setSyncProvider() causes the Time library to synchronize with the
     // external RTC by calling RTC.get() every five minutes by default.
-    setSyncProvider(RTC.get);
+    setSyncProvider(myRTC.get);
     Debug.print(F("RTC Sync"));
     if (timeStatus() != timeSet) Debug.print(F(" FAIL!"));
     Debug.println();
