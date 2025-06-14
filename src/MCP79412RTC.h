@@ -34,12 +34,12 @@
 #define i2cWrite TinyWireM.send
 #else
 #include <Wire.h>
-#define i2cBegin Wire.begin
-#define i2cBeginTransmission Wire.beginTransmission
-#define i2cEndTransmission Wire.endTransmission
-#define i2cRequestFrom Wire.requestFrom
-#define i2cRead Wire.read
-#define i2cWrite Wire.write
+#define i2cBegin wire.begin
+#define i2cBeginTransmission wire.beginTransmission
+#define i2cEndTransmission wire.endTransmission
+#define i2cRequestFrom wire.requestFrom
+#define i2cRead wire.read
+#define i2cWrite wire.write
 #endif
 
 #ifndef _BV
@@ -139,13 +139,12 @@ class MCP79412RTC
             ALMxMSK0    {4},
             ALMxIF      {3};    // Alarm Interrupt Flag: Set by hardware when an alarm was triggered, cleared by software.
 
-        MCP79412RTC() {};
-        MCP79412RTC(bool initI2C) { (void)initI2C; }  // undocumented for backward compatibility
+        MCP79412RTC(TwoWire& tw=Wire) : wire(tw) {};
         void begin();
-        static time_t get();
-        static void set(const time_t t);
-        static bool read(tmElements_t& tm);
-        static void write(const tmElements_t& tm);
+        time_t get();
+        void set(const time_t t);
+        bool read(tmElements_t& tm);
+        void write(const tmElements_t& tm);
         void sramWrite(const uint8_t addr, const uint8_t value);
         void sramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
         uint8_t sramRead(const uint8_t addr);
@@ -174,13 +173,14 @@ class MCP79412RTC
         void dumpEEPROM(const uint32_t startAddr=0, const uint32_t nBytes=128);
 
     private:
-        static void ramWrite(const uint8_t addr, const uint8_t value);
-        static void ramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
-        static uint8_t ramRead(uint8_t addr);
-        static void ramRead(const uint8_t addr, uint8_t* values, const uint8_t nBytes);
-        static uint8_t eepromWait();
-        static uint8_t dec2bcd(const uint8_t num);
-        static uint8_t bcd2dec(const uint8_t num);
+        TwoWire& wire;      // reference to Wire or Wire1
+        void ramWrite(const uint8_t addr, const uint8_t value);
+        void ramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
+        uint8_t ramRead(uint8_t addr);
+        void ramRead(const uint8_t addr, uint8_t* values, const uint8_t nBytes);
+        uint8_t eepromWait();
+        uint8_t dec2bcd(const uint8_t num);
+        uint8_t bcd2dec(const uint8_t num);
 };
 
 #endif
