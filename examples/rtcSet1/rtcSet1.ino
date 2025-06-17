@@ -26,7 +26,7 @@ void setup()
     myRTC.set(now());                   // set the RTC from the system time
 
     // sync the system time with the RTC every five minutes (by default)
-    setSyncProvider(myRTC.get);
+    setSyncProvider([](){return myRTC.get();});
     if (timeStatus() != timeSet)
         Serial.println("Unable to sync with the RTC");
     else

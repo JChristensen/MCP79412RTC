@@ -28,7 +28,7 @@ void setup()
     Serial.begin(115200);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
 
-    setSyncProvider(myRTC.get);     // the function to get the time from the RTC
+    setSyncProvider([](){return myRTC.get();}); // the function to get the time from the RTC
     Serial << "RTC SYNC";
     if (timeStatus()!= timeSet) Serial << " FAIL";
     Serial << endl;

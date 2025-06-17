@@ -13,7 +13,18 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/gpl.html>
 
-## Important note: Library v2.0.0
+## Version 3.0.0 notes
+Version 3.0.0 adds the ability to address different I2C peripherals for microcontrollers that have more than one (e.g. `Wire`, `Wire1`, etc.) There is one situation that is not backwards compatible with earlier versions of the library. Code that calls `setSyncProvider()` in the [Time library](https://github.com/PaulStoffregen/Time), e.g.:
+```c++
+    setSyncProvider(myRTC.get);
+```
+Needs to change as follows:
+```c++
+    setSyncProvider([](){return myRTC.get();});
+```
+This uses a lambda to provide the Time library with a static function, which it requires. The `MCP79412::get()` function was static in previous versions of the library, but no longer is in v3.0.0. This allows the flexibility to operate with different I2C peripherals.
+
+## Version 2.0.0 notes
 The 2.0.0 version of the library has some significant changes and is not completely backwards compatible with earlier versions. These changes provide a more consistent API and reduce the possibility of name collisions. While sketches using this library will likely require changes as a result, these should be mostly straightforward.
 
  - The library no longer defines an `MCP79412RTC` object, therefore each sketch needs to define  one. (Previous versions of the library defined an `MCP79412RTC` object named `RTC`, although only for AVR architecture. Consider using a name other than `RTC` as this can cause a name collision on some architectures.)
@@ -35,6 +46,7 @@ The following example sketches are included with the **MCP79412RTC** library:
 - **rtcSet1:** Set the RTC date and time using a hard-coded value in the sketch.
 - **rtcSet2:** Similar to **rtcSet1**, a different way to hard-code the date and time.
 - **rtcSet3:** Set the RTC to the sketch compile date and time.
+- **rtc_wire1:** Raspberry Pi Pico example using `Wire1`.
 - **SetSerial:** Set the RTC's date, time, and calibration register from the Arduino serial monitor.
 - **TimeRTC:** Similar to the example of the same name provided with the **Time** library.
 - **PowerOutageLogger:** A comprehensive example that implements a power failure logger using the MCP79412's ability to capture power down and power up times.  Power failure events are logged to the MCP79412's SRAM.  Output is to the Arduino serial monitor.
@@ -71,18 +83,21 @@ Symbolic names used with the squareWave() function (described below).
 - SQWAVE_NONE
 
 ## Constructor
-### MCP79412RTC()
+### MCP79412RTC(TwoWire& wire)
 ##### Description
 Instantiates an `MCP79412RTC` object.
 ##### Syntax
-`MCP79412RTC myRTC;`
+`MCP79412RTC myRTC(wire);`
 ##### Parameters
-None.
+**wire:** An optional parameter to specify which I2C bus to use. If omitted, defaults to `Wire`. *(TwoWire&)*
 ##### Returns
 None.
 ##### Example
 ```c++
-MCP79412RTC myRTC;
+MCP79412RTC myRTC;          // to use Wire
+// or
+MCP79412RTC myRTC(Wire1);   // to use Wire1
+
 ```
 
 ## Initialization function

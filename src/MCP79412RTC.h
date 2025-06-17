@@ -173,7 +173,7 @@ class MCP79412RTC
         void dumpEEPROM(const uint32_t startAddr=0, const uint32_t nBytes=128);
 
     private:
-        TwoWire& wire;      // reference to Wire or Wire1
+        TwoWire& wire;      // reference to Wire, Wire1, etc.
         void ramWrite(const uint8_t addr, const uint8_t value);
         void ramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
         uint8_t ramRead(uint8_t addr);
