@@ -38,12 +38,13 @@ time_t MCP79412RTC::get()
 }
 
 // Set the RTC to the given time_t value.
-void MCP79412RTC::set(const time_t t)
+// Returns the I2C status (zero if successful).
+uint8_t MCP79412RTC::set(const time_t t)
 {
     tmElements_t tm;
 
     breakTime(t, tm);
-    write(tm);
+    return ( write(tm) );
 }
 
 // Read the current time from the RTC and return it in a tmElements_t
@@ -70,7 +71,7 @@ bool MCP79412RTC::read(tmElements_t& tm)
 }
 
 // Set the RTC's time from a tmElements_t structure.
-void MCP79412RTC::write(const tmElements_t& tm)
+uint8_t MCP79412RTC::write(const tmElements_t& tm)
 {
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(RTCSEC);
@@ -86,35 +87,36 @@ void MCP79412RTC::write(const tmElements_t& tm)
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(RTCSEC);
     i2cWrite(dec2bcd(tm.Second) | _BV(STOSC));  // set the seconds and start the oscillator (Bit 7, STOSC == 1)
-    i2cEndTransmission();
+    uint8_t ret = i2cEndTransmission();
+    return ret;
 }
 
 // Write a single byte to RTC RAM.
 // Valid address range is 0x00 - 0x5F, no checking.
-void MCP79412RTC::ramWrite(const uint8_t addr, const uint8_t value)
+uint8_t MCP79412RTC::writeRTC(const uint8_t addr, const uint8_t value)
 {
-    ramWrite(addr, &value, 1);
+    return ( writeRTC(addr, &value, 1) );
 }
 
 // Write multiple bytes to RTC RAM.
 // Valid address range is 0x00 - 0x5F, no checking.
 // Number of bytes (nBytes) must be between 1 and 31 (Wire library
 // limitation).
-void MCP79412RTC::ramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes)
+uint8_t MCP79412RTC::writeRTC(const uint8_t addr, const uint8_t* values, const uint8_t nBytes)
 {
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
     for (uint8_t i=0; i<nBytes; i++) i2cWrite(values[i]);
-    i2cEndTransmission();
+    return i2cEndTransmission();
 }
 
 // Read a single byte from RTC RAM.
 // Valid address range is 0x00 - 0x5F, no checking.
-uint8_t MCP79412RTC::ramRead(uint8_t addr)
+uint8_t MCP79412RTC::readRTC(uint8_t addr)
 {
     uint8_t value;
 
-    ramRead(addr, &value, 1);
+    readRTC(addr, &value, 1);
     return value;
 }
 
@@ -122,20 +124,21 @@ uint8_t MCP79412RTC::ramRead(uint8_t addr)
 // Valid address range is 0x00 - 0x5F, no checking.
 // Number of bytes (nBytes) must be between 1 and 32 (Wire library
 // limitation).
-void MCP79412RTC::ramRead(const uint8_t addr, uint8_t* values, const uint8_t nBytes)
+uint8_t MCP79412RTC::readRTC(const uint8_t addr, uint8_t* values, const uint8_t nBytes)
 {
     i2cBeginTransmission(RTC_ADDR);
     i2cWrite(addr);
-    i2cEndTransmission();
+    if ( uint8_t e = i2cEndTransmission() ) return e;
     i2cRequestFrom(RTC_ADDR, nBytes);
     for (uint8_t i=0; i<nBytes; i++) values[i] = i2cRead();
+    return 0;
 }
 
 // Write a single byte to Static RAM.
 // Address (addr) is constrained to the range (0, 63).
 void MCP79412RTC::sramWrite(const uint8_t addr, const uint8_t value)
 {
-    ramWrite( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, &value, 1 );
+    writeRTC( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, &value, 1 );
 }
 
 // Write multiple bytes to Static RAM.
@@ -152,7 +155,7 @@ void MCP79412RTC::sramWrite(const uint8_t addr, const uint8_t* values, const uin
 #else
     if (nBytes >= 1 && nBytes <= (BUFFER_LENGTH - 1) && (addr + nBytes) <= SRAM_SIZE) {
 #endif
-        ramWrite( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes );
+        writeRTC( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes );
     }
 }
 
@@ -162,7 +165,7 @@ uint8_t MCP79412RTC::sramRead(const uint8_t addr)
 {
     uint8_t value;
 
-    ramRead( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, &value, 1 );
+    readRTC( (addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, &value, 1 );
     return value;
 }
 
@@ -180,7 +183,7 @@ void MCP79412RTC::sramRead(const uint8_t addr, uint8_t* values, const uint8_t nB
 #else
     if (nBytes >= 1 && nBytes <= BUFFER_LENGTH && (addr + nBytes) <= SRAM_SIZE) {
 #endif
-        ramRead((addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes);
+        readRTC((addr & (SRAM_SIZE - 1) ) + SRAM_START_ADDR, values, nBytes);
     }
 }
 
@@ -267,7 +270,7 @@ uint8_t MCP79412RTC::eepromWait()
 // it and return it to the caller as a regular twos-complement integer.
 int16_t MCP79412RTC::calibRead()
 {
-    uint8_t val {ramRead(OSCTRIM)};
+    uint8_t val {readRTC(OSCTRIM)};
 
     if ( val & 0x80 ) return -(val & 0x7F);
     else return val;
@@ -281,7 +284,7 @@ void MCP79412RTC::calibWrite(const int16_t value)
     if (value >= -127 && value <= 127) {
         uint8_t calibVal = abs(value);
         if (value < 0) calibVal += 128;
-        ramWrite(OSCTRIM, calibVal);
+        writeRTC(OSCTRIM, calibVal);
     }
 }
 
@@ -339,8 +342,8 @@ void MCP79412RTC::getEUI64(uint8_t* uniqueID)
 bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
 {
     uint8_t day, yr;                // copies of the RTC Day and Year registers
-    ramRead(RTCWKDAY, &day, 1);
-    ramRead(RTCYEAR, &yr, 1);
+    readRTC(RTCWKDAY, &day, 1);
+    readRTC(RTCYEAR, &yr, 1);
     yr = y2kYearToTm(bcd2dec(yr));
     if ( day & _BV(PWRFAIL) ) {
         i2cBeginTransmission(RTC_ADDR);
@@ -374,7 +377,7 @@ bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
         // registers directly, we won't lose any sleep about it at this point unless
         // some issue is actually brought to our attention ;-)
         day &= ~_BV(PWRFAIL);
-        ramWrite(RTCWKDAY, &day , 1);
+        writeRTC(RTCWKDAY, &day , 1);
 
         // adjust the powerDown timestamp if needed (see notes above)
         if (*powerDown > *powerUp) {
@@ -391,14 +394,14 @@ bool MCP79412RTC::powerFail(time_t* powerDown, time_t* powerUp)
 void MCP79412RTC::squareWave(const SQWAVE_FREQS_t freq)
 {
     uint8_t ctrlReg;
-    ramRead(CONTROL, &ctrlReg, 1);
+    readRTC(CONTROL, &ctrlReg, 1);
     if (freq > 3) {
         ctrlReg &= ~_BV(SQWEN);
     }
     else {
         ctrlReg = (ctrlReg & 0xF8) | _BV(SQWEN) | freq;
     }
-    ramWrite(CONTROL, &ctrlReg, 1);
+    writeRTC(CONTROL, &ctrlReg, 1);
 }
 
 // Set an alarm to the given time_t value. Sets the alarm registers only,
@@ -406,7 +409,7 @@ void MCP79412RTC::squareWave(const SQWAVE_FREQS_t freq)
 void MCP79412RTC::setAlarm(const ALARM_NBR_t alarmNumber, const time_t alarmTime)
 {
     uint8_t day;                // need to preserve bits in the day (of week) register
-    ramRead( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
+    readRTC( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
     tmElements_t tm;
     breakTime(alarmTime, tm);
     i2cBeginTransmission(RTC_ADDR);
@@ -443,18 +446,18 @@ void MCP79412RTC::setAlarm(const ALARM_NBR_t alarmNumber, const uint16_t y, cons
 void MCP79412RTC::enableAlarm(const ALARM_NBR_t alarmNumber, const ALARM_TYPES_t alarmType)
 {
     uint8_t ctrl;               // control register has alarm enable bits
-    ramRead(CONTROL, &ctrl, 1);
+    readRTC(CONTROL, &ctrl, 1);
     if (alarmType < ALM_DISABLE) {
         uint8_t day;                            // alarm day register has config & flag bits
-        ramRead(ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
+        readRTC(ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
         day = ( day & 0x87 ) | alarmType << 4;  // reset interrupt flag, OR in the config bits
-        ramWrite(ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
+        writeRTC(ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
         ctrl |= _BV(ALM0EN + alarmNumber);      // enable the alarm
     }
     else {
         ctrl &= ~(_BV(ALM0EN + alarmNumber));   // disable the alarm
     }
-    ramWrite(CONTROL, &ctrl, 1);
+    writeRTC(CONTROL, &ctrl, 1);
 }
 
 // Returns true or false depending on whether the given alarm has been
@@ -463,10 +466,10 @@ void MCP79412RTC::enableAlarm(const ALARM_NBR_t alarmNumber, const ALARM_TYPES_t
 bool MCP79412RTC::alarm(const ALARM_NBR_t alarmNumber)
 {
     uint8_t day;                // alarm day register has config & flag bits
-    ramRead( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
+    readRTC( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
     if (day & _BV(ALMxIF)) {
         day &= ~_BV(ALMxIF);    // turn off the alarm "interrupt" flag
-        ramWrite( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
+        writeRTC( ALM0WKDAY + alarmNumber * (ALM1SEC - ALM0SEC), &day, 1);
         return true;
     }
     else
@@ -478,12 +481,12 @@ bool MCP79412RTC::alarm(const ALARM_NBR_t alarmNumber)
 void MCP79412RTC::out(const bool level)
 {
     uint8_t ctrlReg;
-    ramRead(CONTROL, &ctrlReg, 1);
+    readRTC(CONTROL, &ctrlReg, 1);
     if (level)
         ctrlReg |= _BV(OUT);
     else
         ctrlReg &= ~_BV(OUT);
-    ramWrite(CONTROL, &ctrlReg, 1);
+    writeRTC(CONTROL, &ctrlReg, 1);
 }
 
 // Specifies the logic level on the Multi-Function Pin (MFP) when an
@@ -499,12 +502,12 @@ void MCP79412RTC::out(const bool level)
 void MCP79412RTC::alarmPolarity(const bool polarity)
 {
     uint8_t alm0Day;
-    ramRead(ALM0WKDAY, &alm0Day, 1);
+    readRTC(ALM0WKDAY, &alm0Day, 1);
     if (polarity)
         alm0Day |= _BV(ALMPOL);
     else
         alm0Day &= ~_BV(ALMPOL);
-    ramWrite(ALM0WKDAY, &alm0Day, 1);
+    writeRTC(ALM0WKDAY, &alm0Day, 1);
 }
 
 // Check to see if the RTC's oscillator is started (STOSC bit in seconds
@@ -526,13 +529,13 @@ bool MCP79412RTC::isRunning()
 void MCP79412RTC::vbaten(const bool enable)
 {
     uint8_t day;
-    ramRead(RTCWKDAY, &day, 1);
+    readRTC(RTCWKDAY, &day, 1);
     if (enable)
         day |= _BV(VBATEN);
     else
         day &= ~_BV(VBATEN);
 
-    ramWrite(RTCWKDAY, &day, 1);
+    writeRTC(RTCWKDAY, &day, 1);
     return;
 }
 
@@ -560,7 +563,7 @@ void MCP79412RTC::dumpRegs(const uint32_t startAddr, const uint32_t nBytes)
     uint32_t aLast {startAddr};
     for (uint32_t r = 0; r < nRows; r++) {
         uint32_t a = startAddr + 16 * r;
-        ramRead(a, d, 16);
+        readRTC(a, d, 16);
         bool same {true};
         for (int i=0; i<16; ++i) {
             if (last[i] != d[i]) same = false;

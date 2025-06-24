@@ -49,6 +49,7 @@ The following example sketches are included with the **MCP79412RTC** library:
 - **rtc_wire1:** Raspberry Pi Pico example using `Wire1`.
 - **SetSerial:** Set the RTC's date, time, and calibration register from the Arduino serial monitor.
 - **TimeRTC:** Similar to the example of the same name provided with the **Time** library.
+- **rtc_interrupt:** Uses a 1Hz interrupt from the RTC to keep time.
 - **PowerOutageLogger:** A comprehensive example that implements a power failure logger using the MCP79412's ability to capture power down and power up times.  Power failure events are logged to the MCP79412's SRAM.  Output is to the Arduino serial monitor.
 - **tiny79412_KnockBang:** Demonstrates interfacing an ATtiny45/85 to the MCP79412.
 

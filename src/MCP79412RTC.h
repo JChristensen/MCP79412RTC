@@ -22,6 +22,7 @@
 
 #include <Arduino.h>
 #include <TimeLib.h>    // https://github.com/PaulStoffregen/Time
+#include <GenericRTC.h>
 
 // define consistent I2C functions
 #if defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
@@ -50,7 +51,7 @@
 #define BUFFER_LENGTH 32
 #endif
 
-class MCP79412RTC
+class MCP79412RTC : public GenericRTC
 {
     public:
         // Alarm types for use with the enableAlarm() function
@@ -139,12 +140,12 @@ class MCP79412RTC
             ALMxMSK0    {4},
             ALMxIF      {3};    // Alarm Interrupt Flag: Set by hardware when an alarm was triggered, cleared by software.
 
-        MCP79412RTC(TwoWire& tw=Wire) : wire(tw) {};
+        MCP79412RTC(TwoWire& tw=Wire) : GenericRTC{tw} {};
         void begin();
         time_t get();
-        void set(const time_t t);
+        uint8_t set(const time_t t);
         bool read(tmElements_t& tm);
-        void write(const tmElements_t& tm);
+        uint8_t write(const tmElements_t& tm);
         void sramWrite(const uint8_t addr, const uint8_t value);
         void sramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
         uint8_t sramRead(const uint8_t addr);
@@ -172,12 +173,13 @@ class MCP79412RTC
         void dumpSRAM(const uint32_t startAddr=0, const uint32_t nBytes=64);
         void dumpEEPROM(const uint32_t startAddr=0, const uint32_t nBytes=128);
 
+        uint8_t writeRTC(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
+        uint8_t writeRTC(const uint8_t addr, const uint8_t value);
+        uint8_t readRTC(const uint8_t addr, uint8_t* values, const uint8_t nBytes);
+        uint8_t readRTC(const uint8_t addr);
+
     private:
-        TwoWire& wire;      // reference to Wire, Wire1, etc.
-        void ramWrite(const uint8_t addr, const uint8_t value);
-        void ramWrite(const uint8_t addr, const uint8_t* values, const uint8_t nBytes);
-        uint8_t ramRead(uint8_t addr);
-        void ramRead(const uint8_t addr, uint8_t* values, const uint8_t nBytes);
+        //TwoWire& wire;      // reference to Wire, Wire1, etc.
         uint8_t eepromWait();
         uint8_t dec2bcd(const uint8_t num);
         uint8_t bcd2dec(const uint8_t num);
